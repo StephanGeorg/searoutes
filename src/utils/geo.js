@@ -143,7 +143,7 @@ export function triplicateGeoJSON(fc) {
       features[index++] = {
         type: 'Feature',
         properties: { ...feature.properties, __wrapShift: dx }, // Track which "world"
-        geometry: shiftGeometry(feature.geometry, dx) // Apply longitude shift to geometry
+        geometry: shiftGeometry(feature.geometry, dx), // Apply longitude shift to geometry
       };
     }
   }
