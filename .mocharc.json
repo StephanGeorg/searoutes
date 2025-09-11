@@ -1,0 +1,9 @@
+{
+  "timeout": 5000,
+  "reporter": "spec",
+  "recursive": true,
+  "exit": true,
+  "checkLeaks": true,
+  "forbidOnly": true,
+  "forbidPending": true
+}
