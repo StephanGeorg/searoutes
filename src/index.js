@@ -1,8 +1,17 @@
 /**
  * Main entry point for the searoutes module
- * @author Your Name
+ * @author Stephan Georg
  * @version 1.0.0
  */
+
+
+// Re-export geo utilities
+export {
+  haversine,
+  triplicateGeoJSON,
+  unwrapPath,
+  normalizePair
+} from './utils/geo.js';
 
 /**
  * A sample function that demonstrates ES6 module functionality

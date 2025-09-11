@@ -20,7 +20,7 @@
     "lint:fix": "eslint src test --fix",
     "build": "rollup -c",
     "build:watch": "rollup -c --watch",
-    "build:types": "tsc --declaration --emitDeclarationOnly --outDir types src/index.js --allowJs",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir types --allowJs --project tsconfig.json",
     "clean": "rm -rf dist types coverage",
     "check": "npm run lint && npm run test:coverage",
     "prepublishOnly": "npm run clean && npm run build && npm run build:types && npm test"
@@ -48,6 +48,7 @@
     "src/",
     "dist/",
     "types/",
+    "data/",
     "README.md",
     "LICENSE"
   ],
