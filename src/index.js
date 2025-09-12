@@ -3,8 +3,6 @@ const require = createRequire(import.meta.url);
 const PathFinderLib = require('geojson-path-finder');
 const PathFinder = PathFinderLib.default;
 
-import Flatbush from 'flatbush';
-import { coordAll } from '@turf/meta';
 import { point, lineString } from '@turf/helpers';
 import splitGeoJSON from 'geojson-antimeridian-cut';
 
@@ -16,6 +14,7 @@ import splitGeoJSON from 'geojson-antimeridian-cut';
 
 import { haversine, triplicateGeoJSON, unwrapPath, normalizePair } from './utils/geo.js';
 import { computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn } from './utils/profiles.js';
+import { CoordinateLookup } from './core/CoordinateLookup.js';
 
 /**
  * A sample class demonstrating ES6 class syntax
@@ -24,68 +23,107 @@ export class SeaRoute {
   /**
    * Creates a new SeaRoute instance
    * @param {Object} network - GeoJSON network data
-   * @param {Object} profiles - Maritime passage rules
-   * @param {Object} [params={}] - Route parameters
-   * @param {string} [params.from] - Starting point
-   * @param {string} [params.to] - Destination point
-   * @param {number} [params.distance] - Distance in nautical miles
+   * @param {Object} [maritimeProfiles] - Maritime passage rules (optional)
+   * @param {Object} [options={}] - Configuration options
+   * @param {number} [options.tolerance=1e-4] - Pathfinding tolerance
+   * @param {number} [options.restrictedMultiplier=1.25] - Weight multiplier for restricted passages
+   * @param {boolean} [options.enableLogging=true] - Enable performance logging
    */
-  constructor(network, profiles, params = {}) {
-    /** @type {Object} */
+  constructor(network, maritimeProfiles = null, options = {}) {
     this.network = network;
-    /** @type {Object} */
-    this.profiles = profiles;
-    /** @type {Object} */
-    this.params = params;
+    this.maritimeProfiles = maritimeProfiles;
+    this.options = {
+      tolerance: 1e-4,
+      restrictedMultiplier: 1.25,
+      enableLogging: true,
+      ...options,
+    };
 
-    this.vertices = null;
-    this.index = null;
-    this.pathFinder = null;
+    // Core infrastructure - now using unified coordinate lookup
+    this.coordinateLookup = null;
     this.tripled = null;
-    this.pathFinders = null;
-    this.enabledProfiles = null;
+
+    // Pathfinding systems
+    this.pathfinders = new Map();
+    this.availableProfiles = [];
 
     this.init();
   }
 
   init() {
-    // Load vertices from routes
-    console.time('Indexing vertices data');
-    this.vertices = coordAll(this.network).map((coords) => coords);
-    this.index = new Flatbush(this.vertices.length);
-    this.vertices.forEach((vertex) => {
-      this.index.add(vertex[0], vertex[1], vertex[0], vertex[1]);
-    });
-    this.index.finish();
-    console.timeEnd('Indexing vertices data');
+    try {
+      // 1. Grundlegende Netzwerk-Infrastruktur aufbauen
+      this.buildNetworkInfrastructure();
 
-    console.time('Triplicating GeoJSON');
+      // 2. Standard-Pathfinder erstellen (immer verfügbar)
+      this.createDefaultPathfinder();
+
+      // 3. Maritime Profile-Pathfinder erstellen (falls konfiguriert)
+      if (this.maritimeProfiles) {
+        this.createMaritimePathfinders();
+      }
+
+      this.log('SeaRoute initialization completed successfully');
+    } catch (error) {
+      throw new Error(`Failed to initialize SeaRoute: ${error.message}`);
+    }
+  }
+
+  buildNetworkInfrastructure() {
+    this.log('Building network infrastructure...');
+
+    // Initialize unified coordinate lookup system
+    this.coordinateLookup = new CoordinateLookup({
+      enableLogging: this.options.enableLogging,
+    });
+
+    // Build spatial index for coordinate operations
+    this.coordinateLookup.buildIndex(this.network);
+
+    // GeoJSON triplizieren für Antimeridian-Handling
+    this.time('Triplicating GeoJSON');
     this.tripled = triplicateGeoJSON(this.network);
-    console.timeEnd('Triplicating GeoJSON');
+    this.timeEnd('Triplicating GeoJSON');
+  }
 
-    console.time('Generating path');
-    // Standard pathfinder with haversine weight
-    this.pathFinder = new PathFinder(this.tripled, {
-      tolerance: 1e-4, // Custom tolerance
-      // weight: (a, b, edgeData) => this.customWeight(a, b, edgeData), // Custom weight function
-      weight: (a, b) => Math.trunc(haversine(a, b)), // Standard haversine weight
-      // edgeDataReducer: (a, b, p) => this.customEdgeReducer(a, b, p), // Custom edge data reducer
-      // edgeDataSeed: (a, b, p) => this.customEdgeDataSeed(a, b, p), // Custom edge data seed
+  createDefaultPathfinder() {
+    this.log('Creating default pathfinder...');
+    this.time('Default pathfinder');
+
+    const defaultPathfinder = new PathFinder(this.tripled, {
+      tolerance: this.options.tolerance,
+      weight: (a, b) => Math.trunc(haversine(a, b)),
     });
-    console.timeEnd('Generating path');
 
-    console.time('Building maritime pathfinders');
-    const maritimePathfinders = this.buildMaritimePathfinders(
-      this.profiles,
+    this.pathfinders.set('default', defaultPathfinder);
+    this.availableProfiles.push('default');
+
+    this.timeEnd('Default pathfinder');
+  }
+
+  createMaritimePathfinders() {
+    this.log('Creating maritime pathfinders...');
+    this.time('Maritime pathfinders');
+
+    const maritimeResult = this.buildMaritimePathfinders(
+      this.maritimeProfiles,
       this.tripled,
       { triplicateGeoJSON, haversine },
-      { triplicate: false, restrictedMultiplier: 1 },
+      {
+        triplicate: false,
+        restrictedMultiplier: this.options.restrictedMultiplier,
+        tolerance: this.options.tolerance,
+      },
     );
-    this.pathFinders = maritimePathfinders.pathFinders;
-    this.profiles = Object.keys(this.pathFinders);
 
-    console.timeEnd('Building maritime pathfinders');
-    console.log('Maritime pathfinders built:', this.profiles);
+    // Maritime Pathfinder zur Map hinzufügen
+    for (const [profileName, pathfinder] of Object.entries(maritimeResult.pathFinders)) {
+      this.pathfinders.set(profileName, pathfinder);
+      this.availableProfiles.push(profileName);
+    }
+
+    this.timeEnd('Maritime pathfinders');
+    this.log(`Maritime profiles available: ${this.getMaritimeProfiles().join(', ')}`);
   }
 
   /**
@@ -155,28 +193,62 @@ export class SeaRoute {
   }
 
   /**
-   * Get the pathfinder instance
-   * @param {*} options Query options
-   * @returns object
+   * Get available pathfinder profiles
+   * @returns {string[]} List of available profile names
    */
-  getPathFinder(options = {}) {
-    const { profile } = options;
-    if (profile) {
-      if (!this.pathFinders[profile]) {
-        throw new Error(`Profile '${profile}' not found.`);
-      }
-      return this.pathFinders[profile];
+  getAvailableProfiles() {
+    return [...this.availableProfiles];
+  }
+
+  /**
+   * Get maritime profiles only (excludes default)
+   * @returns {string[]} List of maritime profile names
+   */
+  getMaritimeProfiles() {
+    return this.availableProfiles.filter(profile => profile !== 'default');
+  }
+
+  /**
+   * Check if a profile exists
+   * @param {string} profileName - Profile name to check
+   * @returns {boolean} True if profile exists
+   */
+  hasProfile(profileName) {
+    return this.pathfinders.has(profileName);
+  }
+
+  /**
+   * Get a specific pathfinder instance
+   * @param {string} [profileName='default'] - Profile name
+   * @returns {Object} PathFinder instance
+   * @throws {Error} If profile doesn't exist
+   */
+  getPathFinder(profileName = 'default') {
+    if (!this.pathfinders.has(profileName)) {
+      throw new Error(
+        `Profile '${profileName}' not found. Available profiles: ${this.availableProfiles.join(', ')}`,
+      );
     }
-    return this.pathFinder;
+    return this.pathfinders.get(profileName);
+  }
+
+  /**
+   * Get pathfinder based on options (backward compatibility)
+   * @param {Object} [options={}] - Options with optional profile
+   * @returns {Object} PathFinder instance
+   */
+  getPathFinderFromOptions(options = {}) {
+    const profileName = options.profile || 'default';
+    return this.getPathFinder(profileName);
   }
 
   getVertices() {
-    return this.vertices;
+    return this.coordinateLookup ? this.coordinateLookup.vertices : null;
   }
 
   getVertex(id) {
-    if (!id) return null;
-    return this.getVertices()[id];
+    if (!id || !this.coordinateLookup) return null;
+    return this.coordinateLookup.getVertex(id);
   }
 
   /**
@@ -185,23 +257,23 @@ export class SeaRoute {
    * @returns {object}
    */
   snapPointToVertex(pointToSnap = {}) {
-    if (!pointToSnap) return null;
-    const neighborId = this.index.neighbors(
-      pointToSnap?.geometry?.coordinates[0],
-      pointToSnap?.geometry?.coordinates[1],
-      1,
-    );
-    return point(this.getVertex(neighborId[0]));
+    if (!this.coordinateLookup) {
+      throw new Error('Coordinate lookup not initialized');
+    }
+    return this.coordinateLookup.snapToNearestVertex(pointToSnap);
   }
 
   /**
    * Get the shortest path between two points
-   * @param {object} startPoint
-   * @param {object} endPoint
-   * @returns
+   * @param {Object} startPoint - GeoJSON point
+   * @param {Object} endPoint - GeoJSON point
+   * @param {Object} [options={}] - Path options
+   * @param {string} [options.profile='default'] - Profile to use
+   * @param {boolean} [options.path=false] - Include geometry in result
+   * @returns {Object|null} Path result with distance and optional geometry
    */
   getShortestPath(startPoint = {}, endPoint = {}, options = {}) {
-    const { path = false } = options;
+    const { path = false, profile = 'default' } = options;
     const start = startPoint?.geometry?.coordinates;
     const end = endPoint?.geometry?.coordinates;
     const [A, B] = normalizePair(start, end);
@@ -210,22 +282,29 @@ export class SeaRoute {
     const AasGeoJSON = point(A);
     const BasGeoJSON = point(B);
 
-    const res = this.getPathFinder(options).findPath(AasGeoJSON, BasGeoJSON);
+    // Use specified profile pathfinder
+    const pathfinder = this.getPathFinder(profile);
+    const res = pathfinder.findPath(AasGeoJSON, BasGeoJSON);
 
-    return res
-      ? {
-        ...res,
-        path: path === true ? splitGeoJSON(lineString(unwrapPath(res.path))) : undefined,
-        distance: res.weight / 1000,
-        distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
-      } : null;
+    if (!res) return null;
+
+    return {
+      ...res,
+      profile, // Include which profile was used
+      path: path === true ? splitGeoJSON(lineString(unwrapPath(res.path))) : undefined,
+      distance: res.weight / 1000,
+      distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
+    };
   }
 
   /**
    * Get shortest route between two points snapped to network
-   * @param {*} startPoint
-   * @param {*} endPoint
-   * @returns
+   * @param {number[]} startPoint - [longitude, latitude]
+   * @param {number[]} endPoint - [longitude, latitude]
+   * @param {Object} [options={}] - Route options
+   * @param {string} [options.profile='default'] - Profile to use
+   * @param {boolean} [options.path=false] - Include geometry in result
+   * @returns {Object|null} Route result
    */
   getShortestRoute(startPoint = [], endPoint = [], options = {}) {
     const start = point(startPoint);
@@ -235,9 +314,11 @@ export class SeaRoute {
     const startPointSnapped = this.snapPointToVertex(start);
     const endPointSnapped = this.snapPointToVertex(end);
 
-    if (!startPointSnapped || !endPointSnapped) throw new Error('Point missing');
+    if (!startPointSnapped || !endPointSnapped) {
+      throw new Error('Unable to snap points to network');
+    }
 
-    // Get shortest path from network
+    // Get shortest path from network using specified or default profile
     const shortestPath = this.getShortestPath(
       startPointSnapped,
       endPointSnapped,
@@ -245,6 +326,25 @@ export class SeaRoute {
     );
 
     return shortestPath;
+  }
+
+  // Utility methods for logging and timing
+  log(message) {
+    if (this.options.enableLogging) {
+      console.log(`[SeaRoute] ${message}`);
+    }
+  }
+
+  time(label) {
+    if (this.options.enableLogging) {
+      console.time(`[SeaRoute] ${label}`);
+    }
+  }
+
+  timeEnd(label) {
+    if (this.options.enableLogging) {
+      console.timeEnd(`[SeaRoute] ${label}`);
+    }
   }
 }
 
