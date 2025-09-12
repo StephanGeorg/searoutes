@@ -46,7 +46,6 @@ export class SeaRoute {
 
     // Pathfinding systems
     this.pathfinders = new Map();
-    this.availableProfiles = [];
 
     // Initialize logger
     this.logger = createLogger('SeaRoute', {
@@ -58,13 +57,9 @@ export class SeaRoute {
 
   init() {
     try {
-      // 1. Grundlegende Netzwerk-Infrastruktur aufbauen
       this.buildNetworkInfrastructure();
-
-      // 2. Standard-Pathfinder erstellen (immer verfügbar)
       this.createDefaultPathfinder();
 
-      // 3. Maritime Profile-Pathfinder erstellen (falls konfiguriert)
       if (this.maritimeProfiles) {
         this.createMaritimePathfinders();
       }
@@ -78,12 +73,10 @@ export class SeaRoute {
   buildNetworkInfrastructure() {
     this.logger.log('Building network infrastructure...');
 
-    // Initialize unified coordinate lookup system with network
     this.coordinateLookup = new CoordinateLookup(this.network, {
       enableLogging: this.options.enableLogging,
     });
 
-    // GeoJSON triplizieren für Antimeridian-Handling
     this.logger.time('Triplicating GeoJSON');
     this.tripled = triplicateGeoJSON(this.network);
     this.logger.timeEnd('Triplicating GeoJSON');
@@ -99,8 +92,6 @@ export class SeaRoute {
     });
 
     this.pathfinders.set('default', defaultPathfinder);
-    this.availableProfiles.push('default');
-
     this.logger.timeEnd('Default pathfinder');
   }
 
@@ -122,30 +113,18 @@ export class SeaRoute {
     // Maritime Pathfinder zur Map hinzufügen
     for (const [profileName, pathfinder] of Object.entries(maritimeResult.pathFinders)) {
       this.pathfinders.set(profileName, pathfinder);
-      this.availableProfiles.push(profileName);
     }
 
     this.logger.timeEnd('Maritime pathfinders');
-    this.logger.log(`Maritime profiles available: ${this.getMaritimeProfiles().join(', ')}`);
   }
 
   /**
- * Build one PathFinder per vessel class from a maritime config and a base routes GeoJSON.
- * - Classes are discovered dynamically from maritimeConfig.classes keys.
- * - NO overrides support.
- * - Uses default_policy when a passage lacks a class-specific status.
- *
- * @param {object} maritimeConfig  // { default_policy, classes:{...}, passages:{...} }
- * @param {object} baseGeoJSON
- * @param {{ triplicateGeoJSON:Function, haversine:Function }} helpers
- * @param {{ restrictedMultiplier?: number, tolerance?: number, triplicate?: boolean }} options
- * @returns {{
- *   pathFinders: Record<string, any>,
- *   weights: Record<string, Function>,
- *   rules: Record<string, {forbidden:Set<number>, restricted:Set<number>}>,
- *   effectiveStatus: Record<string, {status: Record<string,string>, feature_ids:number[]}>
- * }}
- */
+   * Build one PathFinder per vessel class from a maritime config and a base routes GeoJSON.
+   * @param {object} maritimeConfig - { default_policy, classes:{...}, passages:{...} }
+   * @param {object} baseGeoJSON
+   * @param {{ triplicateGeoJSON:Function, haversine:Function }} helpers
+   * @param {{ restrictedMultiplier?: number, tolerance?: number, triplicate?: boolean }} options
+   */
   buildMaritimePathfinders(
     maritimeConfig = {},
     baseGeoJSON,
@@ -163,22 +142,16 @@ export class SeaRoute {
       throw new Error('maritimeConfig.classes is empty. Add at least one vessel class.');
     }
 
-    // 1) Effective status = base config only (no overrides)
     const effective = computeEffectiveStatusNoOverrides(maritimeConfig, classes);
-
-    // 2) Edge rules by class
     const rules = collectClassEdgeRules(effective, classes);
 
-    // 3) Weight functions per class
     const weights = {};
     for (const clazz of classes) {
       weights[clazz] = makeWeightFn(clazz, rules, restrictedMultiplier, helpers.haversine);
     }
 
-    // 4) Graph (optionally triplicate upstream)
     const graph = triplicate ? helpers.triplicateGeoJSON(baseGeoJSON) : baseGeoJSON;
 
-    // 5) PathFinders per class
     const pathFinders = {};
     for (const clazz of classes) {
       pathFinders[clazz] = new PathFinder(graph, {
@@ -196,31 +169,6 @@ export class SeaRoute {
   }
 
   /**
-   * Get available pathfinder profiles
-   * @returns {string[]} List of available profile names
-   */
-  getAvailableProfiles() {
-    return [...this.availableProfiles];
-  }
-
-  /**
-   * Get maritime profiles only (excludes default)
-   * @returns {string[]} List of maritime profile names
-   */
-  getMaritimeProfiles() {
-    return this.availableProfiles.filter(profile => profile !== 'default');
-  }
-
-  /**
-   * Check if a profile exists
-   * @param {string} profileName - Profile name to check
-   * @returns {boolean} True if profile exists
-   */
-  hasProfile(profileName) {
-    return this.pathfinders.has(profileName);
-  }
-
-  /**
    * Get a specific pathfinder instance
    * @param {string} [profileName='default'] - Profile name
    * @returns {Object} PathFinder instance
@@ -228,21 +176,12 @@ export class SeaRoute {
    */
   getPathFinder(profileName = 'default') {
     if (!this.pathfinders.has(profileName)) {
+      const available = Array.from(this.pathfinders.keys()).join(', ');
       throw new Error(
-        `Profile '${profileName}' not found. Available profiles: ${this.availableProfiles.join(', ')}`,
+        `Profile '${profileName}' not found. Available profiles: ${available}`,
       );
     }
     return this.pathfinders.get(profileName);
-  }
-
-  /**
-   * Get pathfinder based on options (backward compatibility)
-   * @param {Object} [options={}] - Options with optional profile
-   * @returns {Object} PathFinder instance
-   */
-  getPathFinderFromOptions(options = {}) {
-    const profileName = options.profile || 'default';
-    return this.getPathFinder(profileName);
   }
 
   /**

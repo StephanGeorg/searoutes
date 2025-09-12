@@ -1,8 +1,12 @@
 import { expect } from 'chai';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 import { SeaRoute } from '../src/SeaRoutes.js';
 
-import { loadJsonFile } from '../src/utils/data.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let route;
 
@@ -11,8 +15,8 @@ describe('searoutes module', () => {
   describe('SeaRoute class', () => {
     before(function beforeAllTests() {
       // Runs once before all tests in this describe block
-      const geojson = loadJsonFile('../../data/networks/eurostat.geojson');
-      const profiles = loadJsonFile('../../data/profiles/example_v1.json');
+      const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
+      const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/example_v1.json'), 'utf8'));
 
       const params = {
         from: 'Hamburg',
