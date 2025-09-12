@@ -18,28 +18,6 @@ import { haversine, triplicateGeoJSON, unwrapPath, normalizePair } from './utils
 import { computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn } from './utils/profiles.js';
 
 /**
- * A sample function that demonstrates ES6 module functionality
- * @param {string} name - The name to greet
- * @returns {string} A greeting message
- * @throws {Error} If name is not a string
- */
-export const greet = (name) => {
-  if (typeof name !== 'string') {
-    throw new Error('Name must be a string');
-  }
-  return `Hello, ${name}! Welcome to searoutes.`;
-};
-
-/**
- * Route information object
- * @typedef {Object} RouteInfo
- * @property {string} from - Starting point
- * @property {string} to - Destination point
- * @property {number} distance - Distance in nautical miles
- * @property {string} description - Human-readable route description
- */
-
-/**
  * A sample class demonstrating ES6 class syntax
  */
 export class SeaRoute {
@@ -273,7 +251,6 @@ export class SeaRoute {
 /**
  * Module exports object
  * @typedef {Object} SearchRoutesModule
- * @property {typeof greet} greet - The greet function
  * @property {typeof SeaRoute} SeaRoute - The SeaRoute class
  * @property {string} version - Module version
  */
@@ -283,7 +260,6 @@ export class SeaRoute {
  * @type {SearchRoutesModule}
  */
 export default {
-  greet,
   SeaRoute,
   version: '1.0.0',
 };
