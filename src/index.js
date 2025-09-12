@@ -242,27 +242,6 @@ export class SeaRoute {
     return this.getPathFinder(profileName);
   }
 
-  getVertices() {
-    return this.coordinateLookup ? this.coordinateLookup.vertices : null;
-  }
-
-  getVertex(id) {
-    if (!id || !this.coordinateLookup) return null;
-    return this.coordinateLookup.getVertex(id);
-  }
-
-  /**
-   * Snap a point to nearest vertex of the network
-   * @param {object} point
-   * @returns {object}
-   */
-  snapPointToVertex(pointToSnap = {}) {
-    if (!this.coordinateLookup) {
-      throw new Error('Coordinate lookup not initialized');
-    }
-    return this.coordinateLookup.snapToNearestVertex(pointToSnap);
-  }
-
   /**
    * Get the shortest path between two points
    * @param {Object} startPoint - GeoJSON point
@@ -311,8 +290,8 @@ export class SeaRoute {
     const end = point(endPoint);
 
     // Snap coords to network
-    const startPointSnapped = this.snapPointToVertex(start);
-    const endPointSnapped = this.snapPointToVertex(end);
+    const startPointSnapped = this.coordinateLookup.snapToNearestVertex(start);
+    const endPointSnapped = this.coordinateLookup.snapToNearestVertex(end);
 
     if (!startPointSnapped || !endPointSnapped) {
       throw new Error('Unable to snap points to network');

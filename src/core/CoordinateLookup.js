@@ -33,6 +33,16 @@ export class CoordinateLookup {
     // Extract all coordinates from the network
     this.vertices = coordAll(network).map((coords) => coords);
 
+    // Handle empty network case
+    if (this.vertices.length === 0) {
+      this.log('Empty network provided - no vertices to index');
+      this.timeEnd('Coordinate indexing');
+      return {
+        vertices: this.vertices,
+        index: null,
+      };
+    }
+
     // Create spatial index
     this.index = new Flatbush(this.vertices.length);
 
@@ -51,15 +61,13 @@ export class CoordinateLookup {
       vertices: this.vertices,
       index: this.index,
     };
-  }
-
-  /**
+  }  /**
    * Get vertex coordinates by index
    * @param {number} vertexIndex - Index of the vertex
    * @returns {number[]|null} Vertex coordinates or null if not found
    */
   getVertex(vertexIndex) {
-    if (!this.vertices || vertexIndex < 0 || vertexIndex >= this.vertices.length) {
+    if (!this.vertices || !Number.isInteger(vertexIndex) || vertexIndex < 0 || vertexIndex >= this.vertices.length) {
       return null;
     }
     return this.vertices[vertexIndex];
@@ -76,8 +84,12 @@ export class CoordinateLookup {
       return null;
     }
 
-    if (!this.index || !this.vertices) {
+    if (!this.vertices || this.vertices.length === 0) {
       throw new Error('Index not built. Call buildIndex() first.');
+    }
+
+    if (!this.index) {
+      throw new Error('No spatial index available (empty network).');
     }
 
     const [lon, lat] = coordinates;
@@ -95,9 +107,7 @@ export class CoordinateLookup {
     }
 
     return point(nearestVertex);
-  }
-
-  /**
+  }  /**
    * Extract coordinates from various input formats
    * @param {Object|number[]} input - Point input (GeoJSON point or coordinate array)
    * @returns {number[]|null} Coordinate array [lon, lat] or null if invalid
