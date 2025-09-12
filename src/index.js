@@ -17,10 +17,6 @@ import splitGeoJSON from 'geojson-antimeridian-cut';
 import { haversine, triplicateGeoJSON, unwrapPath, normalizePair } from './utils/geo.js';
 import { computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn } from './utils/profiles.js';
 
-
-
-// import maritimeConfig from '../../data/maritime_passage_rules_v1.json';
-
 /**
  * A sample function that demonstrates ES6 module functionality
  * @param {string} name - The name to greet
@@ -69,6 +65,7 @@ export class SeaRoute {
     this.pathFinder = null;
     this.tripled = null;
     this.pathFinders = null;
+    this.enabledProfiles = null;
 
     this.init();
   }
@@ -107,9 +104,10 @@ export class SeaRoute {
       { triplicate: false, restrictedMultiplier: 1 },
     );
     this.pathFinders = maritimePathfinders.pathFinders;
+    this.profiles = Object.keys(this.pathFinders);
 
     console.timeEnd('Building maritime pathfinders');
-    console.log('Maritime pathfinders built:', Object.keys(this.pathFinders));
+    console.log('Maritime pathfinders built:', this.profiles);
   }
 
   /**

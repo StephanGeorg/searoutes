@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "updated": "2025-09-10",
+  "classes": {
+    "panamax": "Panamax (≤80k DWT, ~≤12m draft)"
+  },
+  "default_policy": "restricted",
+  "risk_groups": {
+    "red_sea_conflict": "Conflict risk in Red Sea area (Suez, Bab el-Mandeb, Gulf of Aden).",
+    "piracy_gulf_of_aden": "Piracy risk in Gulf of Aden (Horn of Africa).",
+    "piracy_somalia": "Piracy risk off the Somali coast.",
+    "persian_gulf_tension": "Instability in Strait of Hormuz / Persian Gulf.",
+    "black_sea_conflict": "Conflict/closure risk in Black Sea (Kerch/Bosphorus).",
+
+    "arctic_ice": "Ice hazards in Arctic routes (Northwest, Northeast, Bering).",
+    "seasonal_fog": "Visibility restrictions in high-traffic straits.",
+    "monsoon_weather": "Seasonal storms in Indian Ocean / SE Asia.",
+
+    "chokepoint_congestion": "Heavy vessel congestion in chokepoints (Malacca, Singapore).",
+    "traffic_density": "Very dense traffic separation (English Channel, Gibraltar).",
+    "pilotage_weather": "Pilotage/weather-sensitive passages (Magellan, Bosphorus).",
+    "shallow_draft_limit": "Depth restrictions limiting large vessels (Malacca, Sunda, Kiel).",
+
+    "panama_drought": "Reduced water depth in Panama Canal due to drought.",
+    "suez_blockage": "Blockage of Suez Canal (e.g., grounding events).",
+    "canal_maintenance": "Scheduled canal closure or maintenance.",
+
+    "regulatory": "National or regional restrictions (e.g., Russian NSR).",
+    "sanctions": "Sanctions affecting use of a route (e.g., Arctic Russia).",
+    "montreux_convention": "Legal regime for Turkish Straits."
+  },
+  "passages": {
+    "suez_canal": {
+      "kind": "canal",
+      "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "allowed" },
+      "risk_group": ["red_sea_conflict", "suez_blockage"],
+      "feature_ids": [40019],
+      "notes": "Core Asia–Europe artery."
+    },
+    "panama_canal": {
+      "kind": "canal",
+      "status": { "panamax": "allowed", "vlcc": "forbidden", "ulcv": "restricted" },
+      "risk_group": ["panama_drought"],
+      "feature_ids": [40535],
+      "notes": "Draft/size restrictions; Neopanamax up to ~14k TEU."
+    },
+    "malacca_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "restricted", "ulcv": "restricted" },
+      "risk_group": ["chokepoint_congestion", "shallow_draft_limit", "monsoon_weather"],
+      "feature_ids": [74494, 104073],
+      "notes": "Malaccamax depth limit; some VLCC/ULCV reroute via Lombok/Makassar."
+    },
+    "sunda_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["shallow_draft_limit", "monsoon_weather"],
+      "feature_ids": [14052, 73448],
+      "notes": "Narrow/shallow; only small to medium vessels."
+    },
+    "gibraltar_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": ["traffic_density"],
+      "feature_ids": [10388, 12736, 15926, 42968],
+      "notes": "Deep water, universally used."
+    },
+    "dover_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": ["traffic_density"],
+      "feature_ids": [],
+      "notes": "Busy but usable by all classes."
+    },
+    "bering_strait": {
+      "kind": "strait",
+      "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["arctic_ice"],
+      "feature_ids": [73537],
+      "notes": "Not commercially viable; Arctic ice constraints."
+    },
+    "magellan_strait": {
+      "kind": "strait",
+      "status": { "panamax": "restricted", "vlcc": "restricted", "ulcv": "restricted" },
+      "risk_group": ["pilotage_weather"],
+      "feature_ids": [23648, 23649],
+      "notes": "Navigable but often avoided; Cape Horn preferred."
+    },
+    "bab_el_mandeb": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": ["red_sea_conflict", "piracy_gulf_of_aden"],
+      "feature_ids": [35169, 61349, 41726],
+      "notes": "Strategic chokepoint; subject to conflict/piracy risks."
+    },
+    "kiel_canal": {
+      "kind": "canal",
+      "status": { "panamax": "restricted", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["shallow_draft_limit"],
+      "feature_ids": [31079],
+      "notes": "Max draft ~9.5m; suited only for feeders/small Panamax."
+    },
+    "corinth_canal": {
+      "kind": "canal",
+      "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": [],
+      "feature_ids": [47650],
+      "notes": "Max beam ~17m, draft ~7.5m; only very small ships."
+    },
+    "northwest_passage": {
+      "kind": "route",
+      "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["arctic_ice"],
+      "feature_ids": [85565],
+      "notes": "Seasonal ice, shallow; not used commercially."
+    },
+    "northeast_passage": {
+      "kind": "route",
+      "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["arctic_ice", "regulatory", "sanctions"],
+      "feature_ids": [106668],
+      "notes": "Ice, sanctions/regulatory constraints."
+    },
+    "bosphorus_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["black_sea_conflict", "montreux_convention", "pilotage_weather"],
+      "feature_ids": [6783],
+      "notes": "Turkish Straits; critical for Black Sea trade, not ULCV/VLCC."
+    },
+    "dardanelles_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["black_sea_conflict", "montreux_convention", "pilotage_weather"],
+      "feature_ids": [32878, 37334],
+      "notes": "Companion to Bosphorus; governs Black Sea access."
+    },
+    "hormuz_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": ["persian_gulf_tension"],
+      "feature_ids": [88550, 99159],
+      "notes": "Vital for oil exports; sensitive geopolitically."
+    },
+    "lombok_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": [],
+      "feature_ids": [57734, 65846, 66381],
+      "notes": "Deep alternative to Malacca; used by VLCC/ULCV."
+    },
+    "makassar_strait": {
+      "kind": "strait",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": [],
+      "feature_ids": [14500, 20118, 44278, 81250],
+      "notes": "Connects to Lombok route; common bypass for Malacca."
+    },
+    "torres_strait": {
+      "kind": "strait",
+      "status": { "panamax": "restricted", "vlcc": "forbidden", "ulcv": "forbidden" },
+      "risk_group": ["shallow_draft_limit"],
+      "feature_ids": [30278, 50405, 70053, 79193],
+      "notes": "Shallow, draft-limited; mainly regional trade."
+    },
+    " ": {
+      "kind": "route",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": [],
+      "feature_ids": [],
+      "notes": "Fallback route around Africa; adds distance but unrestricted."
+    },
+    "cape_horn": {
+      "kind": "route",
+      "status": { "panamax": "allowed", "vlcc": "allowed", "ulcv": "allowed" },
+      "risk_group": ["pilotage_weather"],
+      "feature_ids": [],
+      "notes": "Fallback route around South America; harsh weather."
+    }
+  },
+  "overrides": [
+    {
+      "id": "red_sea_closure_2025Q1",
+      "description": "Temporary closure of Suez Canal & Bab el-Mandeb due to conflict.",
+      "active": false,
+      "window": { "start": "2025-01-01", "end": "2025-03-31" },
+      "actions": [
+        { "type": "set_status", "passage_id": "suez_canal", "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" } },
+        { "type": "set_status", "passage_id": "bab_el_mandeb", "status": { "panamax": "forbidden", "vlcc": "forbidden", "ulcv": "forbidden" } }
+      ]
+    },
+    {
+      "id": "panama_drought_tightening",
+      "description": "Close Panama Canal for ULCV during drought.",
+      "active": false,
+      "when_risk_group_active": "panama_drought",
+      "actions": [
+        { "type": "set_status", "passage_id": "panama_canal", "status": { "panamax": "allowed", "vlcc": "forbidden", "ulcv": "forbidden" } }
+      ]
+    },
+    {
+      "id": "malacca_congestion_penalty",
+      "description": "Apply penalty to Malacca Strait when congestion risk group is active.",
+      "active": false,
+      "when_risk_group_active": "chokepoint_congestion",
+      "actions": [
+        { "type": "set_status", "passage_id": "malacca_strait", "status": { "panamax": "restricted", "vlcc": "forbidden", "ulcv": "forbidden" } }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import { point } from '@turf/helpers';
 
 import { greet, SeaRoute } from '../src/index.js';
 
@@ -28,7 +27,7 @@ describe('searoutes module', () => {
     before(function beforeAllTests() {
       // Runs once before all tests in this describe block
       const geojson = loadJsonFile('../../data/networks/eurostat.geojson');
-      const profiles = loadJsonFile('../../data/profiles/maritime_passage_rules_v1.json');
+      const profiles = loadJsonFile('../../data/profiles/example_v1.json');
 
       const params = {
         from: 'Hamburg',
