@@ -39,36 +39,37 @@ describe('CoordinateLookup', () => {
       ],
     };
 
-    lookup = new CoordinateLookup({ enableLogging: false });
+    lookup = new CoordinateLookup(testNetwork, { enableLogging: false });
   });
 
   describe('constructor', () => {
-    it('should create instance with default options', () => {
-      const defaultLookup = new CoordinateLookup();
+    it('should create instance with default options and build index', () => {
+      const defaultLookup = new CoordinateLookup(testNetwork);
       expect(defaultLookup.options.enableLogging).to.be.false;
-      expect(defaultLookup.vertices).to.be.null;
-      expect(defaultLookup.index).to.be.null;
+      expect(defaultLookup.vertices).to.be.an('array');
+      expect(defaultLookup.index).to.not.be.null;
     });
 
-    it('should accept custom options', () => {
-      const customLookup = new CoordinateLookup({ enableLogging: true });
+    it('should accept custom options and build index', () => {
+      const customLookup = new CoordinateLookup(testNetwork, { enableLogging: true });
       expect(customLookup.options.enableLogging).to.be.true;
+      expect(customLookup.vertices).to.be.an('array');
+      expect(customLookup.index).to.not.be.null;
+    });
+
+    it('should handle empty network in constructor', () => {
+      const emptyNetwork = {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      const emptyLookup = new CoordinateLookup(emptyNetwork);
+      expect(emptyLookup.vertices).to.have.length(0);
+      expect(emptyLookup.index).to.be.null;
     });
   });
 
-  describe('buildIndex', () => {
-    it('should build spatial index from GeoJSON network', () => {
-      const result = lookup.buildIndex(testNetwork);
-
-      expect(result).to.have.property('vertices');
-      expect(result).to.have.property('index');
-      expect(lookup.vertices).to.be.an('array');
-      expect(lookup.index).to.not.be.null;
-    });
-
-    it('should extract all coordinates from network', () => {
-      lookup.buildIndex(testNetwork);
-
+  describe('network indexing', () => {
+    it('should extract all coordinates from network during construction', () => {
       // Should have 6 vertices total (including duplicates from coordAll)
       expect(lookup.vertices).to.have.length(6);
 
@@ -81,23 +82,13 @@ describe('CoordinateLookup', () => {
       expect(lookup.vertices[5]).to.deep.equal([2, 2]);
     });
 
-    it('should handle empty network', () => {
-      const emptyNetwork = {
-        type: 'FeatureCollection',
-        features: [],
-      };
-
-      const result = lookup.buildIndex(emptyNetwork);
-      expect(result.vertices).to.have.length(0);
-      expect(result.index).to.be.null;
+    it('should have built spatial index during construction', () => {
+      expect(lookup.vertices).to.be.an('array');
+      expect(lookup.index).to.not.be.null;
     });
   });
 
   describe('getVertex', () => {
-    beforeEach(() => {
-      lookup.buildIndex(testNetwork);
-    });
-
     it('should return vertex coordinates by index', () => {
       const vertex = lookup.getVertex(0);
       expect(vertex).to.deep.equal([0, 0]);
@@ -115,15 +106,16 @@ describe('CoordinateLookup', () => {
     });
 
     it('should return null when vertices not initialized', () => {
-      const uninitializedLookup = new CoordinateLookup();
+      const emptyNetwork = {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      const uninitializedLookup = new CoordinateLookup(emptyNetwork);
       expect(uninitializedLookup.getVertex(0)).to.be.null;
     });
   });
 
   describe('snapToNearestVertex', () => {
-    beforeEach(() => {
-      lookup.buildIndex(testNetwork);
-    });
 
     it('should snap GeoJSON point to nearest vertex', () => {
       const inputPoint = point([0.1, 0.1]);
@@ -159,13 +151,17 @@ describe('CoordinateLookup', () => {
       expect(lookup.snapToNearestVertex([1])).to.be.null; // Only one coordinate
     });
 
-    it('should throw error when index not built', () => {
-      const uninitializedLookup = new CoordinateLookup();
+    it('should throw error when network is empty', () => {
+      const emptyNetwork = {
+        type: 'FeatureCollection',
+        features: [],
+      };
+      const emptyLookup = new CoordinateLookup(emptyNetwork);
       const inputPoint = point([0, 0]);
 
       expect(() => {
-        uninitializedLookup.snapToNearestVertex(inputPoint);
-      }).to.throw('Index not built. Call buildIndex() first.');
+        emptyLookup.snapToNearestVertex(inputPoint);
+      }).to.throw('No spatial index available (empty network).');
     });
 
     it('should handle various coordinate input formats', () => {
@@ -235,10 +231,10 @@ describe('CoordinateLookup', () => {
         ],
       };
 
-      lookup.buildIndex(singlePointNetwork);
-      expect(lookup.vertices).to.have.length(1);
+      const singlePointLookup = new CoordinateLookup(singlePointNetwork);
+      expect(singlePointLookup.vertices).to.have.length(1);
 
-      const snapped = lookup.snapToNearestVertex([5.1, 5.1]);
+      const snapped = singlePointLookup.snapToNearestVertex([5.1, 5.1]);
       expect(snapped.geometry.coordinates).to.deep.equal([5, 5]);
     });
 
@@ -257,10 +253,10 @@ describe('CoordinateLookup', () => {
         ],
       };
 
-      lookup.buildIndex(duplicateNetwork);
-      expect(lookup.vertices).to.have.length(3); // coordAll extracts all coordinates
+      const duplicateLookup = new CoordinateLookup(duplicateNetwork);
+      expect(duplicateLookup.vertices).to.have.length(3); // coordAll extracts all coordinates
 
-      const snapped = lookup.snapToNearestVertex([0.1, 0.1]);
+      const snapped = duplicateLookup.snapToNearestVertex([0.1, 0.1]);
       expect(snapped.geometry.coordinates).to.deep.equal([0, 0]);
     });
 
@@ -279,8 +275,8 @@ describe('CoordinateLookup', () => {
         ],
       };
 
-      lookup.buildIndex(largeCoordNetwork);
-      const snapped = lookup.snapToNearestVertex([179.9, 84.9]);
+      const largeLookup = new CoordinateLookup(largeCoordNetwork);
+      const snapped = largeLookup.snapToNearestVertex([179.9, 84.9]);
       expect(snapped.geometry.coordinates).to.deep.equal([180, 85]);
     });
   });
@@ -306,15 +302,15 @@ describe('CoordinateLookup', () => {
       };
 
       const start = Date.now();
-      lookup.buildIndex(largeNetwork);
+      const largeLookup = new CoordinateLookup(largeNetwork);
       const buildTime = Date.now() - start;
 
       expect(buildTime).to.be.lessThan(1000); // Should build in under 1 second
-      expect(lookup.vertices).to.have.length(100);
+      expect(largeLookup.vertices).to.have.length(100);
 
       // Test snapping performance
       const snapStart = Date.now();
-      const snapped = lookup.snapToNearestVertex([5.05, 5.05]);
+      const snapped = largeLookup.snapToNearestVertex([5.05, 5.05]);
       const snapTime = Date.now() - snapStart;
 
       expect(snapTime).to.be.lessThan(100); // Should snap in under 100ms
@@ -328,8 +324,7 @@ describe('CoordinateLookup', () => {
       const originalLog = console.log;
       console.log = (...args) => logSpy.push(args);
 
-      const quietLookup = new CoordinateLookup({ enableLogging: false });
-      quietLookup.buildIndex(testNetwork);
+      const quietLookup = new CoordinateLookup(testNetwork, { enableLogging: false });
 
       console.log = originalLog;
 
@@ -345,8 +340,7 @@ describe('CoordinateLookup', () => {
       const originalLog = console.log;
       console.log = (...args) => logSpy.push(args);
 
-      const verboseLookup = new CoordinateLookup({ enableLogging: true });
-      verboseLookup.buildIndex(testNetwork);
+      const verboseLookup = new CoordinateLookup(testNetwork, { enableLogging: true });
 
       console.log = originalLog;
 

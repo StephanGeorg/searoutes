@@ -9,10 +9,11 @@ import { createLogger } from '../utils/logger.js';
  */
 export class CoordinateLookup {
   /**
+   * @param {Object} network - GeoJSON network data
    * @param {Object} [options={}] - Configuration options
    * @param {boolean} [options.enableLogging=false] - Enable performance logging
    */
-  constructor(options = {}) {
+  constructor(network, options = {}) {
     this.options = {
       enableLogging: false,
       ...options,
@@ -25,6 +26,9 @@ export class CoordinateLookup {
     this.logger = createLogger('CoordinateLookup', {
       enableLogging: this.options.enableLogging,
     });
+
+    // Build index immediately with provided network
+    this.buildIndex(network);
   }
 
   /**
@@ -91,10 +95,6 @@ export class CoordinateLookup {
     }
 
     if (!this.vertices || this.vertices.length === 0) {
-      throw new Error('Index not built. Call buildIndex() first.');
-    }
-
-    if (!this.index) {
       throw new Error('No spatial index available (empty network).');
     }
 

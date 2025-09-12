@@ -78,13 +78,10 @@ export class SeaRoute {
   buildNetworkInfrastructure() {
     this.logger.log('Building network infrastructure...');
 
-    // Initialize unified coordinate lookup system
-    this.coordinateLookup = new CoordinateLookup({
+    // Initialize unified coordinate lookup system with network
+    this.coordinateLookup = new CoordinateLookup(this.network, {
       enableLogging: this.options.enableLogging,
     });
-
-    // Build spatial index for coordinate operations
-    this.coordinateLookup.buildIndex(this.network);
 
     // GeoJSON triplizieren für Antimeridian-Handling
     this.logger.time('Triplicating GeoJSON');
