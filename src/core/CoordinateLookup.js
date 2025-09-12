@@ -1,6 +1,7 @@
 import Flatbush from 'flatbush';
 import { coordAll } from '@turf/meta';
 import { point } from '@turf/helpers';
+import { createLogger } from '../utils/logger.js';
 
 /**
  * Handles spatial indexing and coordinate lookup operations for route networks
@@ -19,6 +20,11 @@ export class CoordinateLookup {
 
     this.vertices = null;
     this.index = null;
+
+    // Initialize logger
+    this.logger = createLogger('CoordinateLookup', {
+      enableLogging: this.options.enableLogging,
+    });
   }
 
   /**
@@ -27,16 +33,16 @@ export class CoordinateLookup {
    * @returns {Object} Result with vertices and index
    */
   buildIndex(network) {
-    this.log('Building spatial coordinate index...');
-    this.time('Coordinate indexing');
+    this.logger.log('Building spatial coordinate index...');
+    this.logger.time('Coordinate indexing');
 
     // Extract all coordinates from the network
     this.vertices = coordAll(network).map((coords) => coords);
 
     // Handle empty network case
     if (this.vertices.length === 0) {
-      this.log('Empty network provided - no vertices to index');
-      this.timeEnd('Coordinate indexing');
+      this.logger.log('Empty network provided - no vertices to index');
+      this.logger.timeEnd('Coordinate indexing');
       return {
         vertices: this.vertices,
         index: null,
@@ -54,8 +60,8 @@ export class CoordinateLookup {
     // Finalize the index
     this.index.finish();
 
-    this.timeEnd('Coordinate indexing');
-    this.log(`Indexed ${this.vertices.length} coordinate vertices`);
+    this.logger.timeEnd('Coordinate indexing');
+    this.logger.log(`Indexed ${this.vertices.length} coordinate vertices`);
 
     return {
       vertices: this.vertices,
@@ -132,22 +138,4 @@ export class CoordinateLookup {
     return null;
   }
 
-  // Logging utilities
-  log(message) {
-    if (this.options.enableLogging) {
-      console.log(`[CoordinateLookup] ${message}`);
-    }
-  }
-
-  time(label) {
-    if (this.options.enableLogging) {
-      console.time(`[CoordinateLookup] ${label}`);
-    }
-  }
-
-  timeEnd(label) {
-    if (this.options.enableLogging) {
-      console.timeEnd(`[CoordinateLookup] ${label}`);
-    }
-  }
 }

@@ -15,6 +15,7 @@ import { point, lineString } from '@turf/helpers';
 import { haversine, triplicateGeoJSON, unwrapPath, normalizePair } from './utils/geo.js';
 import { computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn } from './utils/profiles.js';
 import { CoordinateLookup } from './core/CoordinateLookup.js';
+import { createLogger } from './utils/logger.js';
 
 /**
  * A sample class demonstrating ES6 class syntax
@@ -47,6 +48,11 @@ export class SeaRoute {
     this.pathfinders = new Map();
     this.availableProfiles = [];
 
+    // Initialize logger
+    this.logger = createLogger('SeaRoute', {
+      enableLogging: this.options.enableLogging,
+    });
+
     this.init();
   }
 
@@ -63,14 +69,14 @@ export class SeaRoute {
         this.createMaritimePathfinders();
       }
 
-      this.log('SeaRoute initialization completed successfully');
+      this.logger.log('SeaRoute initialization completed successfully');
     } catch (error) {
       throw new Error(`Failed to initialize SeaRoute: ${error.message}`);
     }
   }
 
   buildNetworkInfrastructure() {
-    this.log('Building network infrastructure...');
+    this.logger.log('Building network infrastructure...');
 
     // Initialize unified coordinate lookup system
     this.coordinateLookup = new CoordinateLookup({
@@ -81,14 +87,14 @@ export class SeaRoute {
     this.coordinateLookup.buildIndex(this.network);
 
     // GeoJSON triplizieren für Antimeridian-Handling
-    this.time('Triplicating GeoJSON');
+    this.logger.time('Triplicating GeoJSON');
     this.tripled = triplicateGeoJSON(this.network);
-    this.timeEnd('Triplicating GeoJSON');
+    this.logger.timeEnd('Triplicating GeoJSON');
   }
 
   createDefaultPathfinder() {
-    this.log('Creating default pathfinder...');
-    this.time('Default pathfinder');
+    this.logger.log('Creating default pathfinder...');
+    this.logger.time('Default pathfinder');
 
     const defaultPathfinder = new PathFinder(this.tripled, {
       tolerance: this.options.tolerance,
@@ -98,12 +104,12 @@ export class SeaRoute {
     this.pathfinders.set('default', defaultPathfinder);
     this.availableProfiles.push('default');
 
-    this.timeEnd('Default pathfinder');
+    this.logger.timeEnd('Default pathfinder');
   }
 
   createMaritimePathfinders() {
-    this.log('Creating maritime pathfinders...');
-    this.time('Maritime pathfinders');
+    this.logger.log('Creating maritime pathfinders...');
+    this.logger.time('Maritime pathfinders');
 
     const maritimeResult = this.buildMaritimePathfinders(
       this.maritimeProfiles,
@@ -122,8 +128,8 @@ export class SeaRoute {
       this.availableProfiles.push(profileName);
     }
 
-    this.timeEnd('Maritime pathfinders');
-    this.log(`Maritime profiles available: ${this.getMaritimeProfiles().join(', ')}`);
+    this.logger.timeEnd('Maritime pathfinders');
+    this.logger.log(`Maritime profiles available: ${this.getMaritimeProfiles().join(', ')}`);
   }
 
   /**
@@ -305,25 +311,6 @@ export class SeaRoute {
     );
 
     return shortestPath;
-  }
-
-  // Utility methods for logging and timing
-  log(message) {
-    if (this.options.enableLogging) {
-      console.log(`[SeaRoute] ${message}`);
-    }
-  }
-
-  time(label) {
-    if (this.options.enableLogging) {
-      console.time(`[SeaRoute] ${label}`);
-    }
-  }
-
-  timeEnd(label) {
-    if (this.options.enableLogging) {
-      console.timeEnd(`[SeaRoute] ${label}`);
-    }
   }
 }
 

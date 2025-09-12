@@ -9,12 +9,12 @@ export default [
       file: 'dist/SeaRoutes.js',
       format: 'es',
       sourcemap: true,
-      exports: 'named'
+      exports: 'named',
     },
     plugins: [
       nodeResolve(),
-      terser()
-    ]
+      terser(),
+    ],
   },
   // CommonJS build for older Node.js compatibility
   {
@@ -23,11 +23,11 @@ export default [
       file: 'dist/SeaRoutes.cjs',
       format: 'cjs',
       sourcemap: true,
-      exports: 'named'
+      exports: 'named',
     },
     plugins: [
       nodeResolve(),
-      terser()
-    ]
-  }
+      terser(),
+    ],
+  },
 ];
