@@ -61,6 +61,7 @@
     "rollup": "^4.21.0"
   },
   "dependencies": {
+    "@turf/helpers": "^7.2.0",
     "@turf/meta": "^7.2.0",
     "flatbush": "^4.5.0",
     "geojson-antimeridian-cut": "^0.1.0",

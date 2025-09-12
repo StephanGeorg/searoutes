@@ -1,4 +1,6 @@
 import { expect } from 'chai';
+import { point } from '@turf/helpers';
+
 import { greet, SeaRoute } from '../src/index.js';
 
 import { loadJsonFile } from '../src/utils/data.js';
@@ -36,10 +38,16 @@ describe('searoutes module', () => {
       route = new SeaRoute(geojson, profiles, params);
     });
 
-    it('should create a route with correct properties', () => {
-      const routeConfig = route.getRouteInfo();
-      expect(routeConfig.params.from).to.equal('Hamburg');
-      // expect(routeConfig.params.to).to.equal('New York');
+    it('should return sea route distance', (done) => {
+      const seaRoute = route.getShortestRoute(
+        [13.5029, 43.6214],
+        [20.2621, 39.4982],
+        { path: false },
+      );
+      const { distance, distanceNM } = seaRoute;
+      expect(distance).to.be.equal(746.199);
+      expect(distanceNM).to.be.equal(402.92);
+      done();
     });
 
   });

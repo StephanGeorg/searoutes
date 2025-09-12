@@ -5,6 +5,8 @@ const PathFinder = PathFinderLib.default;
 
 import Flatbush from 'flatbush';
 import { coordAll } from '@turf/meta';
+import { point, lineString } from '@turf/helpers';
+import splitGeoJSON from 'geojson-antimeridian-cut';
 
 /**
  * Main entry point for the searoutes module
@@ -73,7 +75,7 @@ export class SeaRoute {
 
   init() {
     // Load vertices from routes
-    if (this.debug) console.time('Indexing vertices data');
+    console.time('Indexing vertices data');
     this.vertices = coordAll(this.network).map((coords) => coords);
     this.index = new Flatbush(this.vertices.length);
     this.vertices.forEach((vertex) => {
@@ -128,7 +130,7 @@ export class SeaRoute {
  * }}
  */
   buildMaritimePathfinders(
-    maritimeConfig,
+    maritimeConfig = {},
     baseGeoJSON,
     helpers, // { triplicateGeoJSON, haversine }
     options = {},
@@ -136,7 +138,7 @@ export class SeaRoute {
     const {
       restrictedMultiplier = 1.25,
       tolerance,
-      triplicate = true,
+      triplicate = false,
     } = options;
 
     const classes = Object.keys(maritimeConfig.classes || {});
@@ -177,26 +179,96 @@ export class SeaRoute {
   }
 
   /**
-   * Get route information
-   * @returns {RouteInfo} Route details
+   * Get the pathfinder instance
+   * @param {*} options Query options
+   * @returns object
    */
-  getRouteInfo() {
-    return {
-      params: this.params,
-    };
+  getPathFinder(options = {}) {
+    const { profile } = options;
+    if (profile) {
+      if (!this.pathFinders[profile]) {
+        throw new Error(`Profile '${profile}' not found.`);
+      }
+      return this.pathFinders[profile];
+    }
+    return this.pathFinder;
+  }
+
+  getVertices() {
+    return this.vertices;
+  }
+
+  getVertex(id) {
+    if (!id) return null;
+    return this.getVertices()[id];
   }
 
   /**
-   * Calculate estimated time based on average speed
-   * @param {number} [speed=10] - Speed in knots
-   * @returns {number} Estimated time in hours
-   * @throws {Error} If speed is not positive
+   * Snap a point to nearest vertex of the network
+   * @param {object} point
+   * @returns {object}
    */
-  calculateTime(speed = 10) {
-    if (speed <= 0) {
-      throw new Error('Speed must be positive');
-    }
-    return this.distance / speed;
+  snapPointToVertex(pointToSnap = {}) {
+    if (!pointToSnap) return null;
+    const neighborId = this.index.neighbors(
+      pointToSnap?.geometry?.coordinates[0],
+      pointToSnap?.geometry?.coordinates[1],
+      1,
+    );
+    return point(this.getVertex(neighborId[0]));
+  }
+
+  /**
+   * Get the shortest path between two points
+   * @param {object} startPoint
+   * @param {object} endPoint
+   * @returns
+   */
+  getShortestPath(startPoint = {}, endPoint = {}, options = {}) {
+    const { path = false } = options;
+    const start = startPoint?.geometry?.coordinates;
+    const end = endPoint?.geometry?.coordinates;
+    const [A, B] = normalizePair(start, end);
+
+    // Turn A and B into geojson with turf.point
+    const AasGeoJSON = point(A);
+    const BasGeoJSON = point(B);
+
+    const res = this.getPathFinder(options).findPath(AasGeoJSON, BasGeoJSON);
+
+    return res
+      ? {
+        ...res,
+        path: path === true ? splitGeoJSON(lineString(unwrapPath(res.path))) : undefined,
+        distance: res.weight / 1000,
+        distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
+      } : null;
+  }
+
+  /**
+   * Get shortest route between two points snapped to network
+   * @param {*} startPoint
+   * @param {*} endPoint
+   * @returns
+   */
+  getShortestRoute(startPoint = [], endPoint = [], options = {}) {
+    const start = point(startPoint);
+    const end = point(endPoint);
+
+    // Snap coords to network
+    const startPointSnapped = this.snapPointToVertex(start);
+    const endPointSnapped = this.snapPointToVertex(end);
+
+    if (!startPointSnapped || !endPointSnapped) throw new Error('Point missing');
+
+    // Get shortest path from network
+    const shortestPath = this.getShortestPath(
+      startPointSnapped,
+      endPointSnapped,
+      options,
+    );
+
+    return shortestPath;
   }
 }
 

@@ -1,3 +1,10 @@
+function normalizeFid(fid) {
+  if (fid === null) return null;
+  if (typeof fid === 'number' && Number.isFinite(fid)) return fid;
+  const n = Number(fid);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function computeEffectiveStatusNoOverrides(cfg, classes) {
   const out = {};
   for (const [passageId, p] of Object.entries(cfg.passages || {})) {
@@ -30,13 +37,6 @@ export function collectClassEdgeRules(effective, classes) {
   }
 
   return rules;
-}
-
-function normalizeFid(fid) {
-  if (fid === null) return null;
-  if (typeof fid === 'number' && Number.isFinite(fid)) return fid;
-  const n = Number(fid);
-  return Number.isFinite(n) ? n : null;
 }
 
 export function makeWeightFn(clazz, rules, restrictedMultiplier, weightFn) {
