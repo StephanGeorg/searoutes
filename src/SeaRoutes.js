@@ -2,9 +2,9 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const PathFinderLib = require('geojson-path-finder');
 const PathFinder = PathFinderLib.default;
+const splitGeoJSON = require('geojson-antimeridian-cut');
 
 import { point, lineString } from '@turf/helpers';
-import splitGeoJSON from 'geojson-antimeridian-cut';
 
 /**
  * Main entry point for the searoutes module

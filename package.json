@@ -2,13 +2,13 @@
   "name": "searoutes",
   "version": "1.0.0",
   "description": "A modern ES6 module for sea routes",
-  "main": "dist/index.js",
-  "module": "src/index.js",
+  "main": "dist/SeaRoutes.js",
+  "module": "src/SeaRoutes.js",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./src/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./src/SeaRoutes.js",
+      "require": "./dist/SeaRoutes.cjs"
     }
   },
   "scripts": {

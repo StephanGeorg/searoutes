@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { SeaRoute } from '../src/index.js';
+import { SeaRoute } from '../src/SeaRoutes.js';
 
 import { loadJsonFile } from '../src/utils/data.js';
 
