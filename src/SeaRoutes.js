@@ -7,7 +7,8 @@ const splitGeoJSON = require('geojson-antimeridian-cut');
 import { point, lineString } from '@turf/helpers';
 
 /**
- * Main entry point for the searoutes module
+ * SeaRoutes - Maritime route calculation library
+ * Provides shortest path calculations for maritime routes with support for vessel-specific restrictions
  * @author Stephan Georg
  * @version 1.0.0
  */
@@ -18,7 +19,16 @@ import { CoordinateLookup } from './core/CoordinateLookup.js';
 import { createLogger } from './utils/logger.js';
 
 /**
- * A sample class demonstrating ES6 class syntax
+ * Maritime route calculation and pathfinding class
+ * Provides shortest path calculations for maritime routes with support for vessel-specific restrictions
+ *
+ * @property {Object} network - GeoJSON network data
+ * @property {Object} maritimeProfiles - Maritime passage rules configuration
+ * @property {Object} options - Configuration options
+ * @property {CoordinateLookup} coordinateLookup - Coordinate lookup and snapping system
+ * @property {Object} tripled - Triplicated GeoJSON for antimeridian handling
+ * @property {Map} pathfinders - Map of profile names to PathFinder instances
+ * @property {Object} logger - Logger instance for performance monitoring
  */
 export class SeaRoute {
   /**
@@ -55,6 +65,11 @@ export class SeaRoute {
     this.init();
   }
 
+  /**
+   * Initialize the SeaRoute instance
+   * @private
+   * @throws {Error} If initialization fails
+   */
   init() {
     try {
       this.buildNetworkInfrastructure();
@@ -70,6 +85,10 @@ export class SeaRoute {
     }
   }
 
+  /**
+   * Build the core network infrastructure including coordinate lookup and GeoJSON triplication
+   * @private
+   */
   buildNetworkInfrastructure() {
     this.logger.log('Building network infrastructure...');
 
@@ -82,6 +101,10 @@ export class SeaRoute {
     this.logger.timeEnd('Triplicating GeoJSON');
   }
 
+  /**
+   * Create the default pathfinder for basic routing without vessel restrictions
+   * @private
+   */
   createDefaultPathfinder() {
     this.logger.log('Creating default pathfinder...');
     this.logger.time('Default pathfinder');
@@ -95,6 +118,10 @@ export class SeaRoute {
     this.logger.timeEnd('Default pathfinder');
   }
 
+  /**
+   * Create maritime pathfinders for vessel-specific routing with passage restrictions
+   * @private
+   */
   createMaritimePathfinders() {
     this.logger.log('Creating maritime pathfinders...');
     this.logger.time('Maritime pathfinders');
@@ -120,10 +147,18 @@ export class SeaRoute {
 
   /**
    * Build one PathFinder per vessel class from a maritime config and a base routes GeoJSON.
-   * @param {object} maritimeConfig - { default_policy, classes:{...}, passages:{...} }
-   * @param {object} baseGeoJSON
-   * @param {{ triplicateGeoJSON:Function, haversine:Function }} helpers
-   * @param {{ restrictedMultiplier?: number, tolerance?: number, triplicate?: boolean }} options
+   * @private
+   * @param {Object} maritimeConfig - Maritime configuration with classes and passages
+   * @param {Object} baseGeoJSON - Base GeoJSON network
+   * @param {Object} helpers - Helper functions object
+   * @param {Function} helpers.triplicateGeoJSON - Function to triplicate GeoJSON
+   * @param {Function} helpers.haversine - Distance calculation function
+   * @param {Object} [options={}] - Build options
+   * @param {number} [options.restrictedMultiplier=1.25] - Weight multiplier for restricted passages
+   * @param {number} [options.tolerance] - Pathfinding tolerance
+   * @param {boolean} [options.triplicate=false] - Whether to triplicate the graph
+   * @returns {Object} Object containing pathFinders, weights, rules, and effectiveStatus
+   * @throws {Error} If maritimeConfig.classes is empty
    */
   buildMaritimePathfinders(
     maritimeConfig = {},
@@ -186,12 +221,21 @@ export class SeaRoute {
 
   /**
    * Get the shortest path between two points
-   * @param {Object} startPoint - GeoJSON point
-   * @param {Object} endPoint - GeoJSON point
-   * @param {Object} [options={}] - Path options
-   * @param {string} [options.profile='default'] - Profile to use
+   * @param {Object} startPoint - GeoJSON point feature
+   * @param {Object} startPoint.geometry - Point geometry
+   * @param {number[]} startPoint.geometry.coordinates - [longitude, latitude]
+   * @param {Object} endPoint - GeoJSON point feature
+   * @param {Object} endPoint.geometry - Point geometry
+   * @param {number[]} endPoint.geometry.coordinates - [longitude, latitude]
+   * @param {Object} [options={}] - Path calculation options
+   * @param {string} [options.profile='default'] - Profile to use for routing
    * @param {boolean} [options.path=false] - Include geometry in result
-   * @returns {Object|null} Path result with distance and optional geometry
+   * @returns {Object|null} Path result with distance and optional geometry, or null if no path found
+   * @returns {number} returns.weight - Path weight in meters
+   * @returns {number} returns.distance - Distance in kilometers
+   * @returns {number} returns.distanceNM - Distance in nautical miles
+   * @returns {string} returns.profile - Profile used for calculation
+   * @returns {Object} [returns.path] - Path geometry (if options.path=true)
    */
   getShortestPath(startPoint = {}, endPoint = {}, options = {}) {
     const { path = false, profile = 'default' } = options;
@@ -220,12 +264,13 @@ export class SeaRoute {
 
   /**
    * Get shortest route between two points snapped to network
-   * @param {number[]} startPoint - [longitude, latitude]
-   * @param {number[]} endPoint - [longitude, latitude]
-   * @param {Object} [options={}] - Route options
-   * @param {string} [options.profile='default'] - Profile to use
+   * @param {number[]} startPoint - Start coordinates [longitude, latitude]
+   * @param {number[]} endPoint - End coordinates [longitude, latitude]
+   * @param {Object} [options={}] - Route calculation options
+   * @param {string} [options.profile='default'] - Profile to use for routing
    * @param {boolean} [options.path=false] - Include geometry in result
-   * @returns {Object|null} Route result
+   * @returns {Object|null} Route result with same structure as getShortestPath, or null if no route found
+   * @throws {Error} If unable to snap points to network
    */
   getShortestRoute(startPoint = [], endPoint = [], options = {}) {
     const start = point(startPoint);
@@ -252,14 +297,14 @@ export class SeaRoute {
 
 /**
  * Module exports object
- * @typedef {Object} SearchRoutesModule
- * @property {typeof SeaRoute} SeaRoute - The SeaRoute class
- * @property {string} version - Module version
+ * @typedef {Object} SeaRoutesModule
+ * @property {typeof SeaRoute} SeaRoute - The SeaRoute class constructor
+ * @property {string} version - Module version string
  */
 
 /**
  * Default export - main module functionality
- * @type {SearchRoutesModule}
+ * @type {SeaRoutesModule}
  */
 export default {
   SeaRoute,

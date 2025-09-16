@@ -71,7 +71,9 @@ export class CoordinateLookup {
       vertices: this.vertices,
       index: this.index,
     };
-  }  /**
+  }
+
+  /**
    * Get vertex coordinates by index
    * @param {number} vertexIndex - Index of the vertex
    * @returns {number[]|null} Vertex coordinates or null if not found
@@ -113,7 +115,9 @@ export class CoordinateLookup {
     }
 
     return point(nearestVertex);
-  }  /**
+  }
+
+  /**
    * Extract coordinates from various input formats
    * @param {Object|number[]} input - Point input (GeoJSON point or coordinate array)
    * @returns {number[]|null} Coordinate array [lon, lat] or null if invalid
