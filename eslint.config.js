@@ -10,15 +10,15 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.mocha
-      }
+        ...globals.mocha,
+      },
     },
     rules: {
       // Possible Errors
       'no-console': 'warn',
       'no-debugger': 'error',
       'no-duplicate-imports': 'error',
-      
+
       // Best Practices
       'eqeqeq': ['error', 'always'],
       'no-eval': 'error',
@@ -26,7 +26,7 @@ export default [
       'no-new-func': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
-      
+
       // ES6
       'arrow-spacing': 'error',
       'no-confusing-arrow': 'error',
@@ -34,19 +34,19 @@ export default [
       'prefer-arrow-callback': 'error',
       'prefer-template': 'error',
       'template-curly-spacing': 'error',
-      
+
       // Style
       'indent': ['error', 2],
       'quotes': ['error', 'single'],
       'semi': ['error', 'always'],
-      'comma-dangle': ['error', 'never'],
+      'comma-dangle': ['error', 'always-multiline'],
       'object-curly-spacing': ['error', 'always'],
       'array-bracket-spacing': ['error', 'never'],
       'space-before-function-paren': ['error', 'never'],
       'keyword-spacing': 'error',
       'space-infix-ops': 'error',
       'no-trailing-spaces': 'error',
-      'eol-last': 'error'
-    }
-  }
+      'eol-last': 'error',
+    },
+  },
 ];

@@ -1,64 +1,42 @@
 import { expect } from 'chai';
-import { greet, SeaRoute } from '../src/index.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+import { SeaRoute } from '../src/SeaRoutes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+let route;
 
 describe('searoutes module', () => {
-  describe('greet function', () => {
-    it('should return a greeting message', () => {
-      const result = greet('World');
-      expect(result).to.equal('Hello, World! Welcome to searoutes.');
-    });
-
-    it('should throw an error for non-string input', () => {
-      expect(() => greet(123)).to.throw('Name must be a string');
-    });
-
-    it('should handle empty string', () => {
-      const result = greet('');
-      expect(result).to.equal('Hello, ! Welcome to searoutes.');
-    });
-  });
 
   describe('SeaRoute class', () => {
-    let route;
+    before(function beforeAllTests() {
+      // Runs once before all tests in this describe block
+      const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
+      const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/example_v1.json'), 'utf8'));
 
-    beforeEach(() => {
-      route = new SeaRoute('Hamburg', 'New York', 3500);
-    });
-
-    it('should create a route with correct properties', () => {
-      expect(route.from).to.equal('Hamburg');
-      expect(route.to).to.equal('New York');
-      expect(route.distance).to.equal(3500);
-    });
-
-    it('should provide route information', () => {
-      const info = route.getRouteInfo();
-      expect(info).to.deep.equal({
+      const params = {
         from: 'Hamburg',
-        to: 'New York',
-        distance: 3500,
-        description: 'Route from Hamburg to New York'
-      });
+      };
+
+      this.timeout(0);
+      route = new SeaRoute(geojson, profiles, params);
     });
 
-    it('should calculate time correctly', () => {
-      const time = route.calculateTime(20); // 20 knots
-      expect(time).to.equal(175); // 3500 / 20 = 175 hours
+    it('should return sea route distance', (done) => {
+      const seaRoute = route.getShortestRoute(
+        [13.5029, 43.6214],
+        [20.2621, 39.4982],
+        { path: false },
+      );
+      const { distance, distanceNM } = seaRoute;
+      expect(distance).to.be.equal(746.199);
+      expect(distanceNM).to.be.equal(402.92);
+      done();
     });
 
-    it('should use default speed when not provided', () => {
-      const time = route.calculateTime();
-      expect(time).to.equal(350); // 3500 / 10 = 350 hours
-    });
-
-    it('should throw error for invalid speed', () => {
-      expect(() => route.calculateTime(0)).to.throw('Speed must be positive');
-      expect(() => route.calculateTime(-5)).to.throw('Speed must be positive');
-    });
-
-    it('should handle zero distance', () => {
-      const localRoute = new SeaRoute('A', 'B', 0);
-      expect(localRoute.calculateTime(10)).to.equal(0);
-    });
   });
 });
