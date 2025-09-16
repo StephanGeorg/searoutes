@@ -4,30 +4,30 @@ import terser from '@rollup/plugin-terser';
 export default [
   // ES Module build
   {
-    input: 'src/index.js',
+    input: 'src/SeaRoutes.js',
     output: {
-      file: 'dist/index.js',
+      file: 'dist/SeaRoutes.js',
       format: 'es',
       sourcemap: true,
-      exports: 'named'
+      exports: 'named',
     },
     plugins: [
       nodeResolve(),
-      terser()
-    ]
+      terser(),
+    ],
   },
   // CommonJS build for older Node.js compatibility
   {
-    input: 'src/index.js',
+    input: 'src/SeaRoutes.js',
     output: {
-      file: 'dist/index.cjs',
+      file: 'dist/SeaRoutes.cjs',
       format: 'cjs',
       sourcemap: true,
-      exports: 'named'
+      exports: 'named',
     },
     plugins: [
       nodeResolve(),
-      terser()
-    ]
-  }
+      terser(),
+    ],
+  },
 ];
