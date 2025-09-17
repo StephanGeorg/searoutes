@@ -108,7 +108,7 @@ const route = searoute.getShortestRoute(
 
 ## Technical architecture
 
-### Algorithms & Data Structures
+### Algorithms & data structures
 
 #### Pathfinding Engine
 - **Algorithm**: Dijkstra's shortest path algorithm
@@ -132,9 +132,9 @@ const route = searoute.getShortestRoute(
 | **c8** | Code coverage reporting |
 | **rollup** | Module bundling for distribution |
 
-## 📚 API Reference
+## API reference
 
-### SeaRoute Class
+### SeaRoute class
 
 #### Constructor
 ```javascript
@@ -169,7 +169,7 @@ Calculate shortest path between GeoJSON points (no snapping).
 ##### `getPathFinder(profileName)`
 Get a specific pathfinder instance for manual route calculation.
 
-## 🔧 Configuration
+## Configuration
 
 ### Maritime Profiles Structure
 
@@ -195,7 +195,7 @@ Get a specific pathfinder instance for manual route calculation.
 }
 ```
 
-### Logging Options
+### Logging options
 
 ```javascript
 const searoute = new SeaRoute(network, profiles, {
@@ -205,7 +205,7 @@ const searoute = new SeaRoute(network, profiles, {
 });
 ```
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run all tests
@@ -218,7 +218,7 @@ npm run test:coverage
 npm run test:watch
 ```
 
-## 🏗️ Building
+## Building
 
 ```bash
 # Build for production
@@ -231,17 +231,17 @@ npm run build:watch
 npm clean
 ```
 
-## 📋 Requirements
+## Requirements
 
 - **Node.js**: >= 16.0.0
 - **Package Manager**: npm or yarn
 - **Module System**: ES6 modules (ESM)
 
-## 📄 License
+## License
 
 MIT © [Stephan Georg](https://github.com/StephanGeorg)
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -249,7 +249,7 @@ MIT © [Stephan Georg](https://github.com/StephanGeorg)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/StephanGeorg/searoutes/issues)
 - **Documentation**: [API Docs](https://github.com/StephanGeorg/searoutes#readme)
