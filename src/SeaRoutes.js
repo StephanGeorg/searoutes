@@ -38,7 +38,7 @@ export class SeaRoute {
    * @param {Object} [options={}] - Configuration options
    * @param {number} [options.tolerance=1e-4] - Pathfinding tolerance
    * @param {number} [options.restrictedMultiplier=1.25] - Weight multiplier for restricted passages
-   * @param {boolean} [options.enableLogging=true] - Enable performance logging
+   * @param {boolean} [options.enableLogging=false] - Enable performance logging
    */
   constructor(network, maritimeProfiles = null, options = {}) {
     this.network = network;
@@ -46,7 +46,7 @@ export class SeaRoute {
     this.options = {
       tolerance: 1e-4,
       restrictedMultiplier: 1.25,
-      enableLogging: true,
+      enableLogging: false,
       ...options,
     };
 
