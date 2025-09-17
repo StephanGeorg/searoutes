@@ -6,43 +6,48 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen)](https://nodejs.org/)
 
-## ✨ Features
+## Data Sources
 
-### 🗺️ Core Routing Capabilities
+SeaRoutes is built on high-quality maritime network datasets from leading institutions:
+
+- **[Eurostat SeaRoute](https://github.com/eurostat/searoute?tab=readme-ov-file#some-additional-information) Network**: European maritime route infrastructure data
+    - **[Oak Ridge National Labs](https://www.ornl.gov/)**: CTA Transportation Network Group, Global Shipping Lane Network, World (2000)
+    - **AIS Data Integration**: Automatic Identification System data for real-world shipping patterns
+- **Global Coverage**: Worldwide maritime route networks with regional specialization
+
+These datasets provide comprehensive coverage of international shipping lanes, ensuring accurate pathfinding for global maritime logistics.
+
+## Features
+
+### Core routing capabilities
 - **Dijkstra-based Pathfinding**: Shortest path calculation using Dijkstra's algorithm via `geojson-path-finder`
 - **Spatial Index Coordinate Snapping**: High-performance coordinate snapping using Flatbush R-tree spatial index
 - **Haversine Distance Calculation**: Great circle distance computation for accurate maritime distances
 - **Graph-based Route Network**: GeoJSON LineString networks converted to weighted graph structures
 - **Multiple Pathfinding Profiles**: Vessel-specific routing with custom weight functions and edge restrictions
 
-### 🚢 Vessel-Specific Routing
+### Vessel-specific routing
 - **Maritime Profiles**: Support for vessel class restrictions (e.g., Panamax, Suezmax)
 - **Passage Restrictions**: Handle forbidden and restricted maritime passages
 - **Dynamic Weight Calculation**: Configurable penalties for restricted routes
 - **Multiple Vessel Classes**: Simultaneous support for different vessel types
 
-### 🎯 Advanced Features
+### Advanced features
 - **R-tree Spatial Indexing**: Flatbush-powered spatial data structure for O(log n) coordinate lookup performance
 - **GeoJSON Network Triplication**: Antimeridian-aware network preprocessing for global routing capabilities
 - **Coordinate Normalization**: Automatic longitude/latitude pair normalization and validation
 - **Edge Weight Functions**: Dynamic weight calculation with configurable penalty multipliers for restricted passages
 - **Memory-Efficient Graph Storage**: Optimized graph representation using adjacency lists and coordinate indexing
 
-### 🔧 Developer Experience
-- **Modern ES6 Modules**: Full ESM support with tree-shaking compatibility
-- **TypeScript-Ready**: Comprehensive JSDoc documentation for type inference
-- **Flexible APIs**: Both high-level and low-level APIs for different use cases
-- **Extensive Testing**: 40+ comprehensive unit tests ensuring reliability
-
-## 📦 Installation
+## Installation
 
 ```bash
 npm install searoutes
 ```
 
-## 🚀 Quick Start
+## Quick start
 
-### Basic Usage
+### Basic usage
 
 ```javascript
 import { SeaRoute } from 'searoutes';
@@ -67,7 +72,7 @@ console.log(`Distance: ${route.distance} km`);
 console.log(`Distance: ${route.distanceNM} nautical miles`);
 ```
 
-### Maritime Profiles Usage
+### Maritime profiles usage
 
 ```javascript
 import { SeaRoute } from 'searoutes';
@@ -89,7 +94,7 @@ const route = searoute.getShortestRoute(
 );
 ```
 
-## 🏗️ Dependencies
+## Dependencies
 
 ### Runtime Dependencies
 
@@ -101,7 +106,7 @@ const route = searoute.getShortestRoute(
 | **[geojson-antimeridian-cut](https://www.npmjs.com/package/geojson-antimeridian-cut)** | ^0.1.0 | Antimeridian crossing detection and LineString splitting |
 | **[geojson-path-finder](https://www.npmjs.com/package/geojson-path-finder)** | ^2.0.2 | Dijkstra's algorithm implementation for weighted graph pathfinding |
 
-## ⚙️ Technical Architecture
+## Technical architecture
 
 ### Algorithms & Data Structures
 
@@ -111,19 +116,13 @@ const route = searoute.getShortestRoute(
 - **Graph Structure**: Adjacency list representation of GeoJSON LineString networks
 - **Weight Function**: Haversine distance calculation with vessel-specific penalties
 
-#### Spatial Indexing
-- **Data Structure**: R-tree spatial index (Flatbush implementation)
-- **Performance**: O(log n) nearest neighbor queries
-- **Coordinate Storage**: Packed binary format for memory efficiency
-- **Query Types**: Point-in-polygon, nearest vertex, range queries
-
 #### Network Preprocessing
 - **Triplication**: GeoJSON network copied 3x for antimeridian handling
 - **Coordinate Extraction**: All vertices extracted using `@turf/meta.coordAll()`
 - **Index Building**: Spatial index constructed from vertex coordinates
 - **Graph Construction**: LineString features converted to weighted edges
 
-### Development Dependencies
+### Development dependencies
 
 | Package | Purpose |
 |---------|---------|
@@ -254,4 +253,3 @@ MIT © [Stephan Georg](https://github.com/StephanGeorg)
 
 - **Issues**: [GitHub Issues](https://github.com/StephanGeorg/searoutes/issues)
 - **Documentation**: [API Docs](https://github.com/StephanGeorg/searoutes#readme)
-- **Email**: s.georg@hey.com
