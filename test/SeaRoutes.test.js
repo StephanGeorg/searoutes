@@ -36,6 +36,19 @@ describe('searoutes module', () => {
       done();
     });
 
+    it('should return ZERO sea route distance', (done) => {
+      const seaRoute = seaRoutes
+        .getShortestRoute(
+          [104.17583333333334, 1.1191666666666666],
+          [104.17666666666668, 1.1180555555555556],
+          { path: true },
+        );
+      const { distance, distanceNM } = seaRoute;
+      expect(distance).to.be.equal(0);
+      expect(distanceNM).to.be.equal(0);
+      done();
+    });
+
     it('should return antimeridian sea route distances (CAVAN -> CNTXG)', (done) => {
       const seaRoute = seaRoutes
         .getShortestRoute(

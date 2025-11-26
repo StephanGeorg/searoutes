@@ -220,6 +220,19 @@ export class SeaRoute {
   }
 
   /**
+   * Format path geometry for output, handling antimeridian crossing
+   * @private
+   * @param {Array} pathCoordinates - Array of coordinate pairs from pathfinder result
+   * @returns {Object} GeoJSON geometry split at antimeridian if necessary
+   */
+  formatPathGeometry(pathCoordinates) {
+    const unwrapped = unwrapPath(pathCoordinates);
+    if (unwrapped.length < 2) return null;
+    const line = lineString(unwrapped);
+    return splitGeoJSON(line);
+  }
+
+  /**
    * Get the shortest path between two points
    * @param {Object} startPoint - GeoJSON point feature
    * @param {Object} startPoint.geometry - Point geometry
@@ -256,7 +269,7 @@ export class SeaRoute {
     return {
       ...res,
       profile, // Include which profile was used
-      path: path === true ? splitGeoJSON(lineString(unwrapPath(res.path))) : undefined,
+      path: path === true ? this.formatPathGeometry(res.path) : undefined,
       distance: res.weight / 1000,
       distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
     };
