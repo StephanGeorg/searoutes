@@ -1,6 +1,6 @@
 {
   "name": "searoutes",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A modern ES6 module for sea routes",
   "main": "dist/SeaRoutes.js",
   "module": "src/SeaRoutes.js",
