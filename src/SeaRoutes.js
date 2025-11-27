@@ -4,19 +4,49 @@ const PathFinderLib = require('geojson-path-finder');
 const PathFinder = PathFinderLib.default;
 const splitGeoJSON = require('geojson-antimeridian-cut');
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { point, lineString } from '@turf/helpers';
 
 /**
  * SeaRoutes - Maritime route calculation library
  * Provides shortest path calculations for maritime routes with support for vessel-specific restrictions
  * @author Stephan Georg
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 import { haversine, triplicateGeoJSON, unwrapPath, normalizePair } from './utils/geo.js';
 import { computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn } from './utils/profiles.js';
 import { CoordinateLookup } from './core/CoordinateLookup.js';
 import { createLogger } from './utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+import defaultProfiles from '../data/profiles/default_v1.json' with { type: 'json' };
+
+/**
+ * Load default network from data folder
+ * @private
+ * @param {string} [networkName='eurostat'] - Name of the network to load (eurostat or ornl)
+ * @returns {Object} GeoJSON network data
+ * @throws {Error} If network file cannot be loaded
+ */
+function loadDefaultNetwork(networkName = 'eurostat') {
+  const allowedNetworks = ['eurostat', 'ornl'];
+  if (!allowedNetworks.includes(networkName)) {
+    throw new Error(`Invalid network name '${networkName}'`);
+  }
+  
+  try {
+    const networkPath = join(__dirname, '..', 'data', 'networks', `${networkName}.geojson`);
+    const data = readFileSync(networkPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    throw new Error(`Failed to load default network '${networkName}': ${error.message}`);
+  }
+}
 
 /**
  * Maritime route calculation and pathfinding class
@@ -33,24 +63,35 @@ import { createLogger } from './utils/logger.js';
 export class SeaRoute {
   /**
    * Creates a new SeaRoute instance
-   * @param {Object} network - GeoJSON network data
-   * @param {Object} [maritimeProfiles] - Maritime passage rules (optional)
    * @param {Object} [options={}] - Configuration options
+   * @param {Object} [options.network] - GeoJSON network data (optional, defaults to eurostat network)
+   * @param {Object} [options.maritimeProfiles] - Maritime passage rules (optional)
+   * @param {string} [options.defaultNetwork='eurostat'] - Default network to use if no network provided ('eurostat' or 'ornl')
    * @param {number} [options.tolerance=1e-4] - Pathfinding tolerance
    * @param {number} [options.restrictedMultiplier=1.25] - Weight multiplier for restricted passages
    * @param {boolean} [options.enableLogging=false] - Enable performance logging
    */
-  constructor(network, maritimeProfiles = null, options = {}) {
-    this.network = network;
-    this.maritimeProfiles = maritimeProfiles;
+  constructor(options = {}) {
+    const {
+      network = null,
+      maritimeProfiles = null,
+      defaultNetwork = 'eurostat',
+      tolerance = 1e-4,
+      restrictedMultiplier = 1.25,
+      enableLogging = false,
+      ...restOptions
+    } = options;
+
+    this.network = network ?? loadDefaultNetwork(defaultNetwork);
+    this.maritimeProfiles = maritimeProfiles ?? defaultProfiles;
     this.options = {
-      tolerance: 1e-4,
-      restrictedMultiplier: 1.25,
-      enableLogging: false,
-      ...options,
+      tolerance,
+      restrictedMultiplier,
+      enableLogging,
+      ...restOptions,
     };
 
-    // Core infrastructure - now using unified coordinate lookup
+    // Core infrastructure
     this.coordinateLookup = null;
     this.tripled = null;
 
