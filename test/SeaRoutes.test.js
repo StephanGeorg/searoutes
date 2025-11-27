@@ -12,15 +12,89 @@ const __dirname = dirname(__filename);
 let seaRoutes;
 
 describe('searoutes module', () => {
+  describe('SeaRoute Constructor', () => {
+    it('should load default "eurostat" network when no options provided', function(done) {
+      this.timeout(0);
+      const route = new SeaRoute();
+      expect(route.network).to.exist;
+      expect(route.network.features).to.be.an('array');
+      expect(route.network.features.length).to.be.greaterThan(0);
+      done();
+    });
+
+    it('should load ornl network when specified', function(done) {
+      this.timeout(0);
+      const route = new SeaRoute({
+        defaultNetwork: 'ornl',
+        enableLogging: true,
+      });
+      expect(route.network).to.exist;
+      expect(route.network.features).to.be.an('array');
+      done();
+    });
+
+    it('should use custom network when provided', () => {
+      const customNetwork = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: [[0, 0], [1, 1]],
+            },
+            properties: {},
+          },
+        ],
+      };
+      const route = new SeaRoute({ network: customNetwork });
+      expect(route.network).to.equal(customNetwork);
+    });
+
+    it('should handle maritime profiles', function(done) {
+      this.timeout(0);
+      const maritimeProfiles = {
+        passages: {},
+        classes: { panamax: {} },
+      };
+
+      const route = new SeaRoute({ maritimeProfiles });
+      expect(route.maritimeProfiles).to.equal(maritimeProfiles);
+      expect(route.network).to.exist;
+      done();
+    });
+
+    it('should throw error for invalid network name', () => {
+      expect(() => {
+        new SeaRoute({ defaultNetwork: 'nonexistent' });
+      }).to.throw(/Failed to load default network/);
+    });
+
+    it('should use all options correctly', () => {
+      const route = new SeaRoute({
+        defaultNetwork: 'ornl',
+        enableLogging: true,
+        tolerance: 0.001,
+        restrictedMultiplier: 2.0,
+      });
+
+      expect(route.options.enableLogging).to.be.true;
+      expect(route.options.tolerance).to.equal(0.001);
+      expect(route.options.restrictedMultiplier).to.equal(2.0);
+    });
+  });
 
   describe('SeaRoute class', () => {
     before(function beforeAllTests() {
-      // Runs once before all tests in this describe block
       const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
       const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/example_v1.json'), 'utf8'));
 
       this.timeout(0);
-      seaRoutes = new SeaRoute(geojson, profiles, { enableLogging: true });
+      seaRoutes = new SeaRoute({
+        network: geojson,
+        maritimeProfiles: profiles,
+        enableLogging: true,
+      });
     });
 
     it('should return sea route distance', (done) => {
