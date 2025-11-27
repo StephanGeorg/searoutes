@@ -24,6 +24,8 @@ import { createLogger } from './utils/logger.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+import defaultProfiles from '../data/profiles/default_v1.json' with { type: 'json' };
+
 /**
  * Load default network from data folder
  * @private
@@ -76,7 +78,7 @@ export class SeaRoute {
     } = options;
 
     this.network = network || loadDefaultNetwork(defaultNetwork);
-    this.maritimeProfiles = maritimeProfiles;
+    this.maritimeProfiles = maritimeProfiles || defaultProfiles;
     this.options = {
       tolerance,
       restrictedMultiplier,

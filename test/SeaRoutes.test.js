@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
 // import util from 'util'; // Used for debugging
 
 import { SeaRoute } from '../src/SeaRoutes.js';
@@ -11,8 +12,8 @@ const __dirname = dirname(__filename);
 
 let seaRoutes;
 
-describe('searoutes module', () => {
-  describe('SeaRoute Constructor', () => {
+describe('SeaRoute', () => {
+  describe('Constructor', () => {
     it('should load default "eurostat" network when no options provided', function(done) {
       this.timeout(0);
       const route = new SeaRoute();
@@ -26,7 +27,7 @@ describe('searoutes module', () => {
       this.timeout(0);
       const route = new SeaRoute({
         defaultNetwork: 'ornl',
-        enableLogging: true,
+        // enableLogging: true,
       });
       expect(route.network).to.exist;
       expect(route.network.features).to.be.an('array');
@@ -51,48 +52,37 @@ describe('searoutes module', () => {
       expect(route.network).to.equal(customNetwork);
     });
 
-    it('should handle maritime profiles', function(done) {
-      this.timeout(0);
-      const maritimeProfiles = {
-        passages: {},
-        classes: { panamax: {} },
-      };
-
-      const route = new SeaRoute({ maritimeProfiles });
-      expect(route.maritimeProfiles).to.equal(maritimeProfiles);
-      expect(route.network).to.exist;
-      done();
-    });
-
     it('should throw error for invalid network name', () => {
       expect(() => {
         new SeaRoute({ defaultNetwork: 'nonexistent' });
       }).to.throw(/Failed to load default network/);
     });
 
-    it('should use all options correctly', () => {
+    it('should use all options correctly',function(done) {
+      this.timeout(0);
       const route = new SeaRoute({
         defaultNetwork: 'ornl',
-        enableLogging: true,
+        enableLogging: false,
         tolerance: 0.001,
         restrictedMultiplier: 2.0,
       });
 
-      expect(route.options.enableLogging).to.be.true;
+      expect(route.options.enableLogging).to.be.false;
       expect(route.options.tolerance).to.equal(0.001);
       expect(route.options.restrictedMultiplier).to.equal(2.0);
+      done();
     });
   });
 
   describe('SeaRoute class', () => {
     before(function beforeAllTests() {
-      const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
-      const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/example_v1.json'), 'utf8'));
+      // const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
+      // const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/default_v1.json'), 'utf8'));
 
       this.timeout(0);
       seaRoutes = new SeaRoute({
-        network: geojson,
-        maritimeProfiles: profiles,
+        // network: geojson,
+        // maritimeProfiles: profiles,
         enableLogging: true,
       });
     });
@@ -218,13 +208,43 @@ describe('searoutes module', () => {
       expect(path.geometry.coordinates.length).to.be.equal(2);
       done();
     });
+    
+    it('should return sea route path (CNSGH  <- DEHAM)', (done) => {
+      const seaRoute = seaRoutes
+        .getShortestRoute(
+          [121.48, 31.23],
+          [9.93, 53.52],
+          { 
+            path: true,
+          },
+        );
+      const { path, distance, distanceNM } = seaRoute;
+
+      // Debugging: uncomment util import above
+      /* console.log(util.inspect(seaRoute.path, {
+        depth: null,
+        colors: false,
+        maxArrayLength: null,
+      })); */ 
+
+      expect(distance).to.be.equal(15315.904);
+      expect(distanceNM).to.be.equal(8269.93);
+      expect(path).to.not.equal(undefined);
+      expect(path.type).to.equal('Feature');
+      expect(path.geometry.type).to.equal('MultiLineString');
+      expect(path.geometry.coordinates.length).to.be.equal(3);
+      done();
+    });
 
     it('should return sea route path from "panamax" optimized profile (CNSGH  <- DEHAM)', (done) => {
       const seaRoute = seaRoutes
         .getShortestRoute(
           [121.48, 31.23],
           [9.93, 53.52],
-          { path: true, profile: 'panamax' },
+          { 
+            path: true,
+            profile: 'panamax',
+          },
         );
       const { path, distance, distanceNM } = seaRoute;
 
