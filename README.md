@@ -253,3 +253,234 @@ MIT © [Stephan Georg](https://github.com/StephanGeorg)
 
 - **Issues**: [GitHub Issues](https://github.com/StephanGeorg/searoutes/issues)
 - **Documentation**: [API Docs](https://github.com/StephanGeorg/searoutes#readme)
+
+## 🚀 Quick Start
+
+```javascript
+import { SeaRoute } from 'searoutes';
+
+// Use default Eurostat network
+const route = new SeaRoute();
+
+// Calculate shortest route between two points
+const result = route.getShortestRoute(
+  [-74.0059, 40.7128],  // New York
+  [139.6917, 35.6895],  // Tokyo
+  { path: true }
+);
+
+console.log(`Distance: ${result.distanceNM} nautical miles`);
+```
+
+### Using ORNL Network
+
+```javascript
+const route = new SeaRoute({
+  defaultNetwork: 'ornl'
+});
+```
+
+### With Custom Network
+
+```javascript
+import customNetwork from './my-network.geojson';
+
+const route = new SeaRoute({
+  network: customNetwork
+});
+```
+
+### With Maritime Profiles
+
+```javascript
+import maritimeProfiles from './profiles/maritime_passage_rules_v1.json';
+
+// Use default network with maritime profiles
+const route = new SeaRoute({
+  maritimeProfiles
+});
+
+// Calculate route for specific vessel class
+const vlccRoute = route.getShortestRoute(
+  [-74.0059, 40.7128],  // New York
+  [2.3522, 48.8566],     // Paris
+  { 
+    profile: 'vlcc',      // Very Large Crude Carrier
+    path: true 
+  }
+);
+
+console.log(`VLCC Route: ${vlccRoute.distanceNM} NM`);
+```
+
+### Complete Configuration Example
+
+```javascript
+import customNetwork from './my-network.geojson';
+import maritimeProfiles from './profiles/maritime_passage_rules_v1.json';
+
+const route = new SeaRoute({
+  network: customNetwork,           // Optional: Custom GeoJSON network
+  maritimeProfiles: maritimeProfiles, // Optional: Maritime passage rules
+  defaultNetwork: 'eurostat',       // Optional: 'eurostat' or 'ornl' (used if network is not provided)
+  tolerance: 1e-4,                  // Optional: Pathfinding tolerance (default: 1e-4)
+  restrictedMultiplier: 1.25,       // Optional: Weight multiplier for restricted passages (default: 1.25)
+  enableLogging: true               // Optional: Enable performance logging (default: false)
+});
+```
+
+## 📖 API Reference
+
+### Constructor
+
+```javascript
+new SeaRoute(options)
+```
+
+**Parameters:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `options` | `Object` | `{}` | Configuration options object |
+| `options.network` | `Object` | `null` | Custom GeoJSON network (FeatureCollection). If not provided, loads default network |
+| `options.maritimeProfiles` | `Object` | `null` | Maritime passage rules configuration with vessel classes and restrictions |
+| `options.defaultNetwork` | `String` | `'eurostat'` | Default network to load: `'eurostat'` or `'ornl'` |
+| `options.tolerance` | `Number` | `1e-4` | Pathfinding tolerance for coordinate matching |
+| `options.restrictedMultiplier` | `Number` | `1.25` | Weight multiplier applied to restricted passages (makes them less preferred) |
+| `options.enableLogging` | `Boolean` | `false` | Enable console logging for performance monitoring |
+
+**Example:**
+
+```javascript
+// Minimal - uses default Eurostat network
+const route = new SeaRoute();
+
+// With options
+const route = new SeaRoute({
+  defaultNetwork: 'ornl',
+  enableLogging: true,
+  tolerance: 0.001
+});
+
+// With custom network and profiles
+const route = new SeaRoute({
+  network: myCustomNetwork,
+  maritimeProfiles: myProfiles,
+  restrictedMultiplier: 2.0
+});
+```
+
+### getShortestRoute()
+
+Calculate the shortest maritime route between two coordinates.
+
+```javascript
+route.getShortestRoute(startPoint, endPoint, options)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `startPoint` | `Array<number>` | Start coordinates `[longitude, latitude]` |
+| `endPoint` | `Array<number>` | End coordinates `[longitude, latitude]` |
+| `options` | `Object` | Route calculation options |
+| `options.profile` | `String` | Profile/vessel class to use (default: `'default'`) |
+| `options.path` | `Boolean` | Include route geometry in result (default: `false`) |
+
+**Returns:** `Object|null`
+
+```javascript
+{
+  weight: 12345678,        // Path weight in meters
+  distance: 12345.68,      // Distance in kilometers
+  distanceNM: 6666.67,     // Distance in nautical miles
+  profile: 'default',      // Profile used for calculation
+  path: { /* GeoJSON */ }  // Route geometry (if options.path = true)
+}
+```
+
+**Example:**
+
+```javascript
+const result = route.getShortestRoute(
+  [-74.0059, 40.7128],     // New York
+  [139.6917, 35.6895],     // Tokyo
+  { 
+    profile: 'panamax',    // Use Panamax vessel profile
+    path: true             // Include route geometry
+  }
+);
+
+console.log(`Distance: ${result.distanceNM} nautical miles`);
+console.log(`Profile: ${result.profile}`);
+```
+
+### getShortestPath()
+
+Calculate the shortest path between two GeoJSON points (no automatic snapping to network).
+
+```javascript
+route.getShortestPath(startPoint, endPoint, options)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `startPoint` | `Object` | GeoJSON Point feature with `geometry.coordinates` |
+| `endPoint` | `Object` | GeoJSON Point feature with `geometry.coordinates` |
+| `options` | `Object` | Same as `getShortestRoute()` |
+
+**Example:**
+
+```javascript
+const start = {
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: [-74.0059, 40.7128]
+  }
+};
+
+const end = {
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: [139.6917, 35.6895]
+  }
+};
+
+const result = route.getShortestPath(start, end, { path: true });
+```
+
+### Available Profiles
+
+When using maritime profiles, the following vessel classes are typically available:
+
+- **`default`**: Basic routing without vessel restrictions
+- **`panamax`**: Panamax-class vessels
+- **`vlcc`**: Very Large Crude Carriers
+- **`ulcv`**: Ultra Large Container Vessels
+
+*Note: Available profiles depend on your maritime configuration file.*
+
+## 🌐 Available Networks
+
+### Eurostat (Default)
+
+European maritime route infrastructure data.
+
+```javascript
+const route = new SeaRoute(); // Uses Eurostat by default
+// or explicitly
+const route = new SeaRoute({ defaultNetwork: 'eurostat' });
+```
+
+### ORNL
+
+Oak Ridge National Labs CTA Transportation Network Group - Global Shipping Lane Network.
+
+```javascript
+const route = new SeaRoute({ defaultNetwork: 'ornl' });
+```
