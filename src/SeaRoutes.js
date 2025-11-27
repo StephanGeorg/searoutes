@@ -34,6 +34,11 @@ import defaultProfiles from '../data/profiles/default_v1.json' with { type: 'jso
  * @throws {Error} If network file cannot be loaded
  */
 function loadDefaultNetwork(networkName = 'eurostat') {
+  const allowedNetworks = ['eurostat', 'ornl'];
+  if (!allowedNetworks.includes(networkName)) {
+    throw new Error(`Invalid network name '${networkName}'.`);
+  }
+  
   try {
     const networkPath = join(__dirname, '..', 'data', 'networks', `${networkName}.geojson`);
     const data = readFileSync(networkPath, 'utf-8');
@@ -77,8 +82,8 @@ export class SeaRoute {
       ...restOptions
     } = options;
 
-    this.network = network || loadDefaultNetwork(defaultNetwork);
-    this.maritimeProfiles = maritimeProfiles || defaultProfiles;
+    this.network = network ?? loadDefaultNetwork(defaultNetwork);
+    this.maritimeProfiles = maritimeProfiles ?? defaultProfiles;
     this.options = {
       tolerance,
       restrictedMultiplier,
