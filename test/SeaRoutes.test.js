@@ -1,6 +1,5 @@
 import { expect } from 'chai';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 // import util from 'util'; // Used for debugging
@@ -55,7 +54,7 @@ describe('SeaRoute', () => {
     it('should throw error for invalid network name', () => {
       expect(() => {
         new SeaRoute({ defaultNetwork: 'nonexistent' });
-      }).to.throw(/Failed to load default network/);
+      }).to.throw(/Invalid network name/);
     });
 
     it('should use all options correctly',function(done) {
@@ -76,9 +75,6 @@ describe('SeaRoute', () => {
 
   describe('SeaRoute class', () => {
     before(function beforeAllTests() {
-      // const geojson = JSON.parse(readFileSync(join(__dirname, '../data/networks/eurostat.geojson'), 'utf8'));
-      // const profiles = JSON.parse(readFileSync(join(__dirname, '../data/profiles/default_v1.json'), 'utf8'));
-
       this.timeout(0);
       seaRoutes = new SeaRoute({
         // network: geojson,
