@@ -36,7 +36,7 @@ import defaultProfiles from '../data/profiles/default_v1.json' with { type: 'jso
 function loadDefaultNetwork(networkName = 'eurostat') {
   const allowedNetworks = ['eurostat', 'ornl'];
   if (!allowedNetworks.includes(networkName)) {
-    throw new Error(`Invalid network name '${networkName}'.`);
+    throw new Error(`Invalid network name '${networkName}'`);
   }
   
   try {
