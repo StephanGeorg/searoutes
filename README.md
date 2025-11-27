@@ -253,3 +253,376 @@ MIT © [Stephan Georg](https://github.com/StephanGeorg)
 
 - **Issues**: [GitHub Issues](https://github.com/StephanGeorg/searoutes/issues)
 - **Documentation**: [API Docs](https://github.com/StephanGeorg/searoutes#readme)
+
+## 🚀 Quick Start
+
+```javascript
+import { SeaRoute } from 'searoutes';
+
+// Use default Eurostat network with default maritime profiles
+const route = new SeaRoute();
+
+// Calculate shortest route between two points
+const result = route.getShortestRoute(
+  [-74.0059, 40.7128],  // New York
+  [139.6917, 35.6895],  // Tokyo
+  { path: true }
+);
+
+console.log(`Distance: ${result.distanceNM} nautical miles`);
+```
+
+### Using Vessel-Specific Profiles
+
+The library includes a default maritime profile for Panamax vessels with passage restrictions:
+
+```javascript
+const route = new SeaRoute();
+
+// Route for Panamax vessel (default profile)
+const panamaxRoute = route.getShortestRoute(
+  [-74.0059, 40.7128],  // New York
+  [2.3522, 48.8566],     // Paris
+  { 
+    profile: 'panamax',
+    path: true 
+  }
+);
+
+console.log(`Panamax: ${panamaxRoute.distanceNM} NM`);
+```
+
+### Using ORNL Network
+
+```javascript
+const route = new SeaRoute({
+  defaultNetwork: 'ornl'
+});
+```
+
+### With Custom Network
+
+```javascript
+import customNetwork from './my-network.geojson';
+
+const route = new SeaRoute({
+  network: customNetwork
+});
+```
+
+### With Custom Maritime Profiles
+
+Override the default maritime profiles with your own:
+
+```javascript
+import customProfiles from './my-custom-profiles.json';
+
+const route = new SeaRoute({
+  maritimeProfiles: customProfiles
+});
+```
+
+### Complete Configuration Example
+
+```javascript
+import customNetwork from './my-network.geojson';
+import customProfiles from './my-profiles.json';
+
+const route = new SeaRoute({
+  network: customNetwork,              // Optional: Custom GeoJSON network
+  maritimeProfiles: customProfiles,    // Optional: Override default maritime profiles
+  defaultNetwork: 'eurostat',          // Optional: 'eurostat' or 'ornl' (used if network is not provided)
+  tolerance: 1e-4,                     // Optional: Pathfinding tolerance (default: 1e-4)
+  restrictedMultiplier: 1.25,          // Optional: Weight multiplier for restricted passages (default: 1.25)
+  enableLogging: true                  // Optional: Enable performance logging (default: false)
+});
+```
+
+## 📖 API Reference
+
+### Constructor
+
+```javascript
+new SeaRoute(options)
+```
+
+**Parameters:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `options` | `Object` | `{}` | Configuration options object |
+| `options.network` | `Object` | `null` | Custom GeoJSON network (FeatureCollection). If not provided, loads default Eurostat network |
+| `options.maritimeProfiles` | `Object` | `default_v1.json` | Maritime passage rules configuration. Defaults to built-in profile with Panamax vessel class |
+| `options.defaultNetwork` | `String` | `'eurostat'` | Default network to load: `'eurostat'` or `'ornl'` |
+| `options.tolerance` | `Number` | `1e-4` | Pathfinding tolerance for coordinate matching |
+| `options.restrictedMultiplier` | `Number` | `1.25` | Weight multiplier applied to restricted passages (makes them less preferred) |
+| `options.enableLogging` | `Boolean` | `false` | Enable console logging for performance monitoring |
+
+**Example:**
+
+```javascript
+// Minimal - uses default Eurostat network and Panamax profile
+const route = new SeaRoute();
+
+// With options
+const route = new SeaRoute({
+  defaultNetwork: 'ornl',
+  enableLogging: true,
+  tolerance: 0.001
+});
+
+// With custom network and profiles
+const route = new SeaRoute({
+  network: myCustomNetwork,
+  maritimeProfiles: myProfiles,
+  restrictedMultiplier: 2.0
+});
+```
+
+### Default Maritime Profile
+
+The library includes a built-in maritime profile (`default_v1.json`) with:
+
+- **Vessel Class**: `panamax` - Panamax vessels (≤80k DWT, ~≤12m draft)
+- **Passage Restrictions**: 21 major maritime passages with status indicators
+  - `allowed`: Route is permitted for the vessel class
+  - `restricted`: Route is permitted but less preferred (penalty applied)
+  - `forbidden`: Route is not permitted for the vessel class
+- **Risk Groups**: Security, environmental, traffic, and infrastructure risks
+- **Override Support**: Temporary route changes (e.g., canal closures)
+
+**Example Passages in Default Profile:**
+- Suez Canal: `forbidden` for Panamax
+- Panama Canal: `allowed` for Panamax
+- Malacca Strait: `allowed` for Panamax
+- Gibraltar Strait: `allowed` for Panamax
+- Bosphorus Strait: `allowed` for Panamax
+
+### getShortestRoute()
+
+Calculate the shortest maritime route between two coordinates, automatically snapping to the network.
+
+```javascript
+route.getShortestRoute(startPoint, endPoint, options)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `startPoint` | `Array<number>` | Start coordinates `[longitude, latitude]` |
+| `endPoint` | `Array<number>` | End coordinates `[longitude, latitude]` |
+| `options` | `Object` | Route calculation options |
+| `options.profile` | `String` | Profile/vessel class to use. Default profile includes: `'default'` (unrestricted), `'panamax' |
+| `options.path` | `Boolean` | Include route geometry in result (default: `false`) |
+
+**Returns:** `Object|null`
+
+```javascript
+{
+  weight: 12345678,        // Path weight in meters
+  distance: 12345.68,      // Distance in kilometers
+  distanceNM: 6666.67,     // Distance in nautical miles
+  profile: 'panamax',      // Profile used for calculation
+  path: { /* GeoJSON */ }  // Route geometry (if options.path = true)
+}
+```
+
+**Example:**
+
+```javascript
+const result = route.getShortestRoute(
+  [-74.0059, 40.7128],     // New York
+  [139.6917, 35.6895],     // Tokyo
+  { 
+    profile: 'panamax',    // Use Panamax vessel profile
+    path: true             // Include route geometry
+  }
+);
+
+console.log(`Distance: ${result.distanceNM} nautical miles`);
+console.log(`Profile: ${result.profile}`);
+```
+
+### getShortestPath()
+
+Calculate the shortest path between two GeoJSON points (no automatic snapping to network).
+
+```javascript
+route.getShortestPath(startPoint, endPoint, options)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `startPoint` | `Object` | GeoJSON Point feature with `geometry.coordinates` |
+| `endPoint` | `Object` | GeoJSON Point feature with `geometry.coordinates` |
+| `options` | `Object` | Same as `getShortestRoute()` |
+
+**Example:**
+
+```javascript
+const start = {
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: [-74.0059, 40.7128]
+  }
+};
+
+const end = {
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: [139.6917, 35.6895]
+  }
+};
+
+const result = route.getShortestPath(start, end, { 
+  profile: 'panamax',
+  path: true 
+});
+```
+
+## 🌐 Available Networks
+
+### Eurostat (Default)
+
+European maritime route infrastructure data based on AIS tracking and official shipping lanes.
+
+```javascript
+const route = new SeaRoute(); // Uses Eurostat by default
+// or explicitly
+const route = new SeaRoute({ defaultNetwork: 'eurostat' });
+```
+
+**Coverage**: European waters, major global shipping routes
+
+### ORNL
+
+Oak Ridge National Labs CTA Transportation Network Group - Global Shipping Lane Network.
+
+```javascript
+const route = new SeaRoute({ defaultNetwork: 'ornl' });
+```
+
+**Coverage**: Worldwide shipping lanes
+
+## ⚙️ Maritime Profiles
+
+### Built-in Default Profile (`default_v1.json`)
+
+The library includes a realistic maritime profile with:
+
+**Vessel Class:**
+- `panamax`: Panamax vessels (≤80k DWT, ~≤12m draft)
+
+**Major Passages (21 total):**
+- **Canals**: Suez, Panama, Kiel, Corinth
+- **Straits**: Malacca, Sunda, Gibraltar, Dover, Bering, Magellan, Bab el-Mandeb, Bosphorus, Dardanelles, Hormuz, Lombok, Makassar, Torres
+- **Routes**: Northwest Passage, Northeast Passage, Cape of Good Hope, Cape Horn
+
+**Risk Groups:**
+- **Security**: Red Sea conflict, piracy (Gulf of Aden, Somalia), Persian Gulf tension, Black Sea conflict
+- **Environmental**: Arctic ice, seasonal fog, monsoon weather
+- **Traffic**: Chokepoint congestion, traffic density, pilotage requirements
+- **Infrastructure**: Panama drought, Suez blockage, canal maintenance
+- **Regulatory**: National restrictions, sanctions, Montreux Convention
+
+**Override Examples:**
+- Red Sea closure during conflicts
+- Panama Canal restrictions during drought
+- Malacca Strait congestion penalties
+
+### Custom Profiles
+
+You can provide your own maritime profiles configuration:
+
+```javascript
+const customProfiles = {
+  version: 1,
+  classes: {
+    myVesselClass: "My Custom Vessel (description)"
+  },
+  passages: {
+    suez_canal: {
+      kind: "canal",
+      status: {
+        myVesselClass: "forbidden"
+      },
+      risk_group: ["red_sea_conflict"],
+      feature_ids: [40019],
+      notes: "Custom notes"
+    }
+  },
+  overrides: [
+    {
+      id: "my_override",
+      active: true,
+      actions: [
+        {
+          type: "set_status",
+          passage_id: "suez_canal",
+          status: { myVesselClass: "forbidden" }
+        }
+      ]
+    }
+  ]
+};
+
+const route = new SeaRoute({
+  maritimeProfiles: customProfiles
+});
+
+// Use custom profile
+const result = route.getShortestRoute(
+  [0, 0], 
+  [10, 10], 
+  { profile: 'myVesselClass' }
+);
+```
+
+### Profile Format
+
+```json
+{
+  "version": 1,
+  "updated": "2025-09-10",
+  "classes": {
+    "vessel_class_name": "Human-readable description"
+  },
+  "default_policy": "allowed|restricted|forbidden",
+  "risk_groups": {
+    "risk_id": "Description of risk"
+  },
+  "passages": {
+    "passage_id": {
+      "kind": "canal|strait|route",
+      "status": {
+        "vessel_class_name": "allowed|restricted|forbidden"
+      },
+      "risk_group": ["risk_id1", "risk_id2"],
+      "feature_ids": [12345],
+      "notes": "Additional information"
+    }
+  },
+  "overrides": [
+    {
+      "id": "override_id",
+      "description": "What this override does",
+      "active": true,
+      "window": { "start": "2025-01-01", "end": "2025-03-31" },
+      "actions": [
+        {
+          "type": "set_status",
+          "passage_id": "passage_id",
+          "status": {
+            "vessel_class_name": "forbidden"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
