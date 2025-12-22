@@ -11,8 +11,11 @@
       "require": "./dist/SeaRoutes.cjs"
     }
   },
+  "bin": {
+    "searoutes-generate-graph": "./scripts/generate-graph.js"
+  },
   "scripts": {
-    "test": "mocha 'test/**/*.test.js'",
+    "test": "NODE_OPTIONS='--max-old-space-size=8192' mocha",
     "test:watch": "mocha 'test/**/*.test.js' --watch",
     "test:coverage": "c8 npm test",
     "lint": "eslint src test",
@@ -62,9 +65,11 @@
   },
   "dependencies": {
     "@turf/helpers": "^7.2.0",
+    "@turf/length": "^7.3.1",
     "@turf/meta": "^7.2.0",
+    "contraction-hierarchy-js": "^2.0.0",
     "flatbush": "^4.5.0",
     "geojson-antimeridian-cut": "^0.1.0",
-    "geojson-path-finder": "^2.0.2"
+    "geojson-path-finder": "^2.1.0"
   }
 }

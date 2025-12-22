@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// import util from 'util'; // Used for debugging
+import util from 'util'; // Used for debugging
 
 import { SeaRoute } from '../src/SeaRoutes.js';
 
@@ -83,6 +83,54 @@ describe('SeaRoute', () => {
       });
     });
 
+    it('should return valid GeoJSON Feature', function() {
+      const result = seaRoutes.getShortestRoute(
+        [-6.144, 53.265],
+        [-5.329, 50.119],
+        { path: false },
+      );
+
+      expect(result).to.be.an('object');
+      expect(result.type).to.equal('Feature');
+      expect(result.geometry).to.be.an('object');
+      expect(result.properties).to.be.an('object');
+    });
+
+    it('should return MultiPoint geometry when path is false', function() {
+      const result = seaRoutes.getShortestRoute(
+        [-6.144, 53.265],
+        [-5.329, 50.119],
+        { path: false },
+      );
+
+      expect(result.type).to.equal('Feature');
+      expect(result.geometry.type).to.equal('MultiPoint');
+      expect(result.geometry.coordinates).to.be.an('array');
+      expect(result.geometry.coordinates).to.have.lengthOf(2);
+      expect(result.geometry.coordinates[0]).to.be.an('array').with.lengthOf(2);
+      expect(result.geometry.coordinates[1]).to.be.an('array').with.lengthOf(2);
+    });
+
+    it('should return geometry when path is true', function() {
+      const result = seaRoutes.getShortestRoute(
+        [-6.144, 53.265],
+        [-5.329, 50.119],
+        { path: true },
+      );
+
+      expect(result).to.be.an('object');
+      // splitGeoJSON can return Feature or FeatureCollection
+      expect(result.type).to.be.oneOf(['Feature', 'FeatureCollection']);
+      
+      if (result.type === 'Feature') {
+        expect(result.geometry).to.exist;
+        expect(result.geometry.type).to.be.oneOf(['LineString', 'MultiLineString']);
+      } else if (result.type === 'FeatureCollection') {
+        expect(result.features).to.be.an('array');
+        expect(result.features.length).to.be.greaterThan(0);
+      }
+    });
+
     it('should return sea route distance', (done) => {
       const seaRoute = seaRoutes
         .getShortestRoute(
@@ -90,9 +138,21 @@ describe('SeaRoute', () => {
           [20.2621, 39.4982],
           { path: false },
         );
-      const { distance, distanceNM } = seaRoute;
-      expect(distance).to.be.equal(746.199);
-      expect(distanceNM).to.be.equal(402.92);
+      expect(seaRoute.properties.distance).to.be.equal(746.199);
+      expect(seaRoute.properties.distanceNM).to.be.equal(402.92);
+      expect(seaRoute.geometry).to.not.equal(null);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('MultiPoint');
+      expect(seaRoute.geometry.coordinates.length).to.equal(2);
+      expect(seaRoute.geometry.coordinates[0]).to.deep.equal([13.5068, 43.621025]);
+      expect(seaRoute.geometry.coordinates[1]).to.deep.equal([20.2647, 39.5003]);
+
+      // Debugging: uncomment util import above
+      /* console.log(util.inspect(seaRoute, {
+        depth: null,
+        colors: false,
+        maxArrayLength: null,
+      })); */
       done();
     });
 
@@ -103,9 +163,11 @@ describe('SeaRoute', () => {
           [104.17666666666668, 1.1180555555555556],
           { path: true },
         );
-      const { distance, distanceNM } = seaRoute;
-      expect(distance).to.be.equal(0);
-      expect(distanceNM).to.be.equal(0);
+      expect(seaRoute.properties.distance).to.be.equal(0);
+      expect(seaRoute.properties.distanceNM).to.be.equal(0);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry).to.equal(null);
+
       done();
     });
 
@@ -116,10 +178,8 @@ describe('SeaRoute', () => {
           [117.7006, 38.9847],
           { path: false },
         );
-      const { distance, distanceNM } = seaRoute;
-
-      expect(distance).to.be.equal(10560.571);
-      expect(distanceNM).to.be.equal(5702.25);
+      expect(seaRoute.properties.distance).to.be.equal(10560.571);
+      expect(seaRoute.properties.distanceNM).to.be.equal(5702.25);
       done();
     });
 
@@ -130,10 +190,8 @@ describe('SeaRoute', () => {
           [-123.1203, 49.2705],
           { path: false },
         );
-      const { distance, distanceNM } = seaRoute;
-
-      expect(distance).to.be.equal(10560.571);
-      expect(distanceNM).to.be.equal(5702.25);
+      expect(seaRoute.properties.distance).to.be.equal(10560.571);
+      expect(seaRoute.properties.distanceNM).to.be.equal(5702.25);
       done();
     });
 
@@ -144,10 +202,9 @@ describe('SeaRoute', () => {
           [-106.406200, 23.232900],
           { path: false },
         );
-      const { distance, distanceNM } = seaRoute;
+      expect(seaRoute.properties.distance).to.be.equal(12920.344);
+      expect(seaRoute.properties.distanceNM).to.be.equal(6976.43);
 
-      expect(distance).to.be.equal(12920.344);
-      expect(distanceNM).to.be.equal(6976.43);
 
       // Debugging
       // console.log('%o', seaRoute);
@@ -163,13 +220,10 @@ describe('SeaRoute', () => {
           [20.2621, 39.4982],
           { path: true },
         );
-      const { path } = seaRoute;
-
-      expect(path).to.not.equal(undefined);
-      expect(path.type).to.equal('Feature');
-      expect(path.geometry.type).to.equal('LineString');
-      expect(path.geometry.coordinates.length).to.be.greaterThan(0);
-
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('LineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.greaterThan(0);
       done();
     });
 
@@ -180,12 +234,10 @@ describe('SeaRoute', () => {
           [117.7006, 38.9847],
           { path: true },
         );
-      const { path } = seaRoute;
-
-      expect(path).to.not.equal(undefined);
-      expect(path.type).to.equal('Feature');
-      expect(path.geometry.type).to.equal('MultiLineString');
-      expect(path.geometry.coordinates.length).to.be.equal(2);
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('MultiLineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.equal(2);
       done();
     });
 
@@ -196,12 +248,10 @@ describe('SeaRoute', () => {
           [-123.1203, 49.2705],
           { path: true },
         );
-      const { path } = seaRoute;
-
-      expect(path).to.not.equal(undefined);
-      expect(path.type).to.equal('Feature');
-      expect(path.geometry.type).to.equal('MultiLineString');
-      expect(path.geometry.coordinates.length).to.be.equal(2);
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('MultiLineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.equal(2);
       done();
     });
     
@@ -214,7 +264,6 @@ describe('SeaRoute', () => {
             path: true,
           },
         );
-      const { path, distance, distanceNM } = seaRoute;
 
       // Debugging: uncomment util import above
       /* console.log(util.inspect(seaRoute.path, {
@@ -223,12 +272,12 @@ describe('SeaRoute', () => {
         maxArrayLength: null,
       })); */ 
 
-      expect(distance).to.be.equal(15315.904);
-      expect(distanceNM).to.be.equal(8269.93);
-      expect(path).to.not.equal(undefined);
-      expect(path.type).to.equal('Feature');
-      expect(path.geometry.type).to.equal('MultiLineString');
-      expect(path.geometry.coordinates.length).to.be.equal(3);
+      expect(seaRoute.properties.distance).to.be.equal(15315.904);
+      expect(seaRoute.properties.distanceNM).to.be.equal(8269.93);
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('MultiLineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.equal(3);
       done();
     });
 
@@ -237,26 +286,56 @@ describe('SeaRoute', () => {
         .getShortestRoute(
           [121.48, 31.23],
           [9.93, 53.52],
-          { 
+          {
             path: true,
-            profile: 'panamax',
+            profile: 'default',
           },
         );
-      const { path, distance, distanceNM } = seaRoute;
 
       // Debugging: uncomment util import above
-      /* console.log(util.inspect(seaRoute.path, {
+      /* console.log(util.inspect(seaRoute, {
         depth: null,
         colors: false,
         maxArrayLength: null,
       })); */
 
-      expect(distance).to.be.equal(26269.169);
-      expect(distanceNM).to.be.equal(14184.22);
-      expect(path).to.not.equal(undefined);
-      expect(path.type).to.equal('Feature');
-      expect(path.geometry.type).to.equal('LineString');
-      expect(path.geometry.coordinates.length).to.be.equal(446);
+      console.log(JSON.stringify(seaRoute));
+
+      expect(seaRoute.properties.distance).to.be.equal(26269.169);
+      expect(seaRoute.properties.distanceNM).to.be.equal(14184.22);
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('LineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.equal(446);
+      done();
+    });
+
+    it('should return sea route path from "aut )', (done) => {
+      const seaRoute = seaRoutes
+        .getShortestRoute(
+          [115.83106007736924, -31.993120092120524],
+          [47.77608641070968, 29.350551216537],
+          {
+            path: true,
+            profile: 'default',
+          },
+        );
+
+      // Debugging: uncomment util import above
+      /* console.log(util.inspect(seaRoute, {
+        depth: null,
+        colors: false,
+        maxArrayLength: null,
+      })); */
+
+      console.log(JSON.stringify(seaRoute));
+
+      expect(seaRoute.properties.distance).to.be.equal(26269.169);
+      expect(seaRoute.properties.distanceNM).to.be.equal(14184.22);
+      expect(seaRoute.geometry).to.not.equal(undefined);
+      expect(seaRoute.type).to.equal('Feature');
+      expect(seaRoute.geometry.type).to.equal('LineString');
+      expect(seaRoute.geometry.coordinates.length).to.be.equal(446);
       done();
     });
 

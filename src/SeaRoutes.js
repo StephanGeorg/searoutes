@@ -38,7 +38,7 @@ function loadDefaultNetwork(networkName = 'eurostat') {
   if (!allowedNetworks.includes(networkName)) {
     throw new Error(`Invalid network name '${networkName}'`);
   }
-  
+
   try {
     const networkPath = join(__dirname, '..', 'data', 'networks', `${networkName}.geojson`);
     const data = readFileSync(networkPath, 'utf-8');
@@ -67,7 +67,7 @@ export class SeaRoute {
    * @param {Object} [options.network] - GeoJSON network data (optional, defaults to eurostat network)
    * @param {Object} [options.maritimeProfiles] - Maritime passage rules (optional)
    * @param {string} [options.defaultNetwork='eurostat'] - Default network to use if no network provided ('eurostat' or 'ornl')
-   * @param {number} [options.tolerance=1e-4] - Pathfinding tolerance
+   * @param {number} [options.tolerance=3e-4] - Pathfinding tolerance
    * @param {number} [options.restrictedMultiplier=1.25] - Weight multiplier for restricted passages
    * @param {boolean} [options.enableLogging=false] - Enable performance logging
    */
@@ -76,7 +76,7 @@ export class SeaRoute {
       network = null,
       maritimeProfiles = null,
       defaultNetwork = 'eurostat',
-      tolerance = 1e-4,
+      tolerance = 3e-4,
       restrictedMultiplier = 1.25,
       enableLogging = false,
       ...restOptions
@@ -264,13 +264,18 @@ export class SeaRoute {
    * Format path geometry for output, handling antimeridian crossing
    * @private
    * @param {Array} pathCoordinates - Array of coordinate pairs from pathfinder result
+   * @param {Object} [properties={}] - Properties to attach to the GeoJSON LineString
    * @returns {Object} GeoJSON geometry split at antimeridian if necessary
    */
-  formatPathGeometry(pathCoordinates) {
+  formatPathGeometry(pathCoordinates, properties = {}) {
     const unwrapped = unwrapPath(pathCoordinates);
     if (unwrapped.length < 2) return null;
-    const line = lineString(unwrapped);
-    return splitGeoJSON(line);
+    const line = lineString(unwrapped, properties);
+    const splittedGeoJSON = splitGeoJSON(line);
+    return splittedGeoJSON;
+
+
+    // return splitGeoJSON(line);
   }
 
   /**
@@ -303,17 +308,49 @@ export class SeaRoute {
 
     // Use specified profile pathfinder
     const pathfinder = this.getPathFinder(profile);
+    this.logger.time('Find path');
     const res = pathfinder.findPath(AasGeoJSON, BasGeoJSON);
+    this.logger.timeEnd('Find path');
 
     if (!res) return null;
 
+    const properties = {
+      profile, // Include which profile was used
+      weight: res.weight,
+      distance: res.weight / 1000,
+      distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
+    };
+
+    // Return full path
+    if (path === true) {
+      const pathGeometry = this.formatPathGeometry(res.path, properties);
+      if (pathGeometry === null) {
+        return {
+          type: 'Feature',
+          geometry: null,
+          properties,
+        };
+      }
+      return pathGeometry;
+    }
+
+    // Return only A and B points as MultiPoint but valid GeoJSON
     return {
+      type: 'Feature',
+      geometry: {
+        type: 'MultiPoint',
+        coordinates: [A, B],
+      },
+      properties,
+    };
+
+    /* return {
       ...res,
       profile, // Include which profile was used
       path: path === true ? this.formatPathGeometry(res.path) : undefined,
       distance: res.weight / 1000,
       distanceNM: Math.round(((res.weight / 1000) * 0.539957) * 100) / 100,
-    };
+    }; */
   }
 
   /**
@@ -331,8 +368,10 @@ export class SeaRoute {
     const end = point(endPoint);
 
     // Snap coords to network
+    this.logger.time('Snapping points to network');
     const startPointSnapped = this.coordinateLookup.snapToNearestVertex(start);
     const endPointSnapped = this.coordinateLookup.snapToNearestVertex(end);
+    this.logger.timeEnd('Snapping points to network');
 
     if (!startPointSnapped || !endPointSnapped) {
       throw new Error('Unable to snap points to network');
