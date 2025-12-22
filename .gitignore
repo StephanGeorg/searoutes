@@ -125,3 +125,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# pbf files
+*.pbf

@@ -1,6 +1,6 @@
 {
   "name": "searoutes",
-  "version": "1.1.0",
+  "version": "2.0.0-alpha1",
   "description": "A modern ES6 module for sea routes",
   "main": "dist/SeaRoutes.js",
   "module": "src/SeaRoutes.js",
@@ -64,7 +64,7 @@
     "rollup": "^4.53.3"
   },
   "dependencies": {
-    "@turf/helpers": "^7.2.0",
+    "@turf/helpers": "^7.3.1",
     "@turf/length": "^7.3.1",
     "@turf/meta": "^7.2.0",
     "contraction-hierarchy-js": "^2.0.0",
