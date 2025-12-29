@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Graph } from 'contraction-hierarchy-js';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname, basename, extname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import length from '@turf/length';
@@ -59,12 +59,12 @@ function parseArgs(args) {
     allProfiles: false,
     listProfiles: false,
     customProfiles: null,
-    debugMode: false
+    debugMode: false,
   };
 
   for (let i = 3; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--profile' && args[i + 1]) {
       options.profile = args[i + 1];
       i++; // Skip next arg
@@ -112,7 +112,7 @@ function loadProfiles(customProfilesPath, defaultProfiles) {
     const customData = readFileSync(customProfilesPath, 'utf-8');
     return JSON.parse(customData);
   }
-  
+
   console.log('📋 Using default maritime profiles');
   return defaultProfiles;
 }
@@ -120,7 +120,7 @@ function loadProfiles(customProfilesPath, defaultProfiles) {
 function listProfiles(profiles) {
   console.log('\n🚢 Available Maritime Profiles:');
   console.log('  basic      - Basic pathfinding without vessel restrictions');
-  
+
   if (profiles && profiles.classes) {
     const classes = Object.keys(profiles.classes);
     for (const className of classes) {
@@ -146,19 +146,19 @@ function generateOutputPath(inputFile, customOutput, profile = 'basic') {
 
 function loadNetwork(inputFile) {
   console.log(`📁 Loading network from: ${inputFile}`);
-  
+
   try {
     const data = readFileSync(inputFile, 'utf-8');
     const network = JSON.parse(data);
-    
+
     if (!network.type || network.type !== 'FeatureCollection') {
       throw new Error('Input must be a GeoJSON FeatureCollection');
     }
-    
+
     if (!network.features || network.features.length === 0) {
       throw new Error('Network must contain at least one feature');
     }
-    
+
     console.log(`✅ Loaded ${network.features.length} features`);
     return network;
   } catch (error) {
@@ -169,14 +169,14 @@ function loadNetwork(inputFile) {
 
 function preprocessNetwork(network, triplicateGeoJSON) {
   console.log('🔄 Preprocessing network...');
-  
+
   // Triplicate GeoJSON for antimeridian handling
   console.time('⏱️  Triplicating GeoJSON');
   const triplicated = triplicateGeoJSON(network);
   console.timeEnd('⏱️  Triplicating GeoJSON');
-  
+
   console.log(`📈 Triplicated network has ${triplicated.features.length} features`);
-  
+
   // Add cost properties to features
   console.log('💰 Adding cost properties...');
   let i = 1;
@@ -185,7 +185,7 @@ function preprocessNetwork(network, triplicateGeoJSON) {
     feature.properties._cost = distKm;
     feature.properties._id = i++;
   }
-  
+
   console.log('✅ Preprocessing completed');
   return triplicated;
 }
@@ -195,37 +195,37 @@ function preprocessNetwork(network, triplicateGeoJSON) {
  * (Adapted from SeaRoutes.js buildMaritimePathfinders method)
  */
 function buildMaritimeWeights(
-  profiles, 
-  vesselClass, 
+  profiles,
+  vesselClass,
   helpers, // { haversine, computeEffectiveStatusNoOverrides, collectClassEdgeRules, makeWeightFn }
-  options = {}
+  options = {},
 ) {
   const { restrictedMultiplier = 1.25 } = options;
-  
+
   const classes = Object.keys(profiles.classes || {});
   if (classes.length === 0) {
     throw new Error('profiles.classes is empty. Add at least one vessel class.');
   }
-  
+
   if (!classes.includes(vesselClass)) {
     throw new Error(`Vessel class '${vesselClass}' not found in profiles. Available: ${classes.join(', ')}`);
   }
 
   const effective = helpers.computeEffectiveStatusNoOverrides(profiles, classes);
   const rules = helpers.collectClassEdgeRules(effective, classes);
-  
+
   const weightFn = helpers.makeWeightFn(vesselClass, rules, restrictedMultiplier, helpers.haversine);
-  
+
   return weightFn;
 }
 
 function buildGraph(network, profile, helpers, debugMode = false) {
   console.log(`🏗️  Building Contraction Hierarchy graph for profile: ${profile}`);
-  
+
   console.time('⏱️  Graph construction');
-  
+
   let weightFn;
-  
+
   if (profile === 'basic') {
     // Basic distance-based weight function
     weightFn = (a, b) => Math.trunc(helpers.haversine(a, b));
@@ -234,26 +234,26 @@ function buildGraph(network, profile, helpers, debugMode = false) {
     const profiles = helpers.defaultProfiles;
     weightFn = buildMaritimeWeights(profiles, profile, helpers, { restrictedMultiplier: 1.25 });
   }
-  
+
   const graph = new Graph(network, { debugMode, weight: weightFn });
   console.timeEnd('⏱️  Graph construction');
-  
+
   console.time('⏱️  Contracting graph');
   graph.contractGraph();
   console.timeEnd('⏱️  Contracting graph');
-  
+
   console.log('✅ Graph construction completed');
   return graph;
 }
 
 function saveGraph(graph, outputFile) {
   console.log(`💾 Saving graph to: ${outputFile}`);
-  
+
   try {
     console.time('⏱️  Saving graph');
     graph.savePbfCH(outputFile);
     console.timeEnd('⏱️  Saving graph');
-    
+
     console.log(`✅ Graph saved successfully: ${outputFile}`);
   } catch (error) {
     console.error(`❌ Error saving graph: ${error.message}`);
@@ -263,70 +263,70 @@ function saveGraph(graph, outputFile) {
 
 async function generateGraph(options, helpers) {
   const { inputFile, profile, debugMode } = options;
-  
+
   // Load and preprocess network
   const network = loadNetwork(inputFile);
   const processedNetwork = preprocessNetwork(network, helpers.triplicateGeoJSON);
-  
+
   // Build graph for specific profile
   const graph = buildGraph(processedNetwork, profile, helpers, debugMode);
-  
+
   // Generate output path
   const outputFile = generateOutputPath(inputFile, options.outputFile, profile);
-  
+
   // Save graph
   saveGraph(graph, outputFile);
-  
+
   return outputFile;
 }
 
 async function main() {
   const args = process.argv;
-  
+
   // Show help if requested
   if (args.includes('-h') || args.includes('--help')) {
     showHelp();
     return;
   }
-  
+
   // Parse command line arguments
   const options = parseArgs(args);
-  
+
   // Import dependencies
   const helpers = await importDependencies();
-  
+
   // Load profiles
   const profiles = loadProfiles(options.customProfiles, helpers.defaultProfiles);
   helpers.profiles = profiles;
-  
+
   // List profiles if requested
   if (options.listProfiles) {
     listProfiles(profiles);
     return;
   }
-  
+
   // Validate arguments
   validateArgs(options);
-  
+
   console.log('🚢 SeaRoutes Graph Generator\n');
   console.log(`Input:  ${options.inputFile}`);
   console.log(`Debug:  ${options.debugMode ? 'enabled' : 'disabled'}\n`);
-  
+
   console.time('⏱️  Total generation time');
-  
+
   try {
     if (options.allProfiles) {
       // Generate graphs for all available profiles
       console.log('🔄 Generating graphs for all profiles...\n');
-      
+
       const results = [];
-      
+
       // Generate basic graph
       console.log('📊 Generating basic graph...');
       const basicResult = await generateGraph({ ...options, profile: 'basic' }, helpers);
       results.push({ profile: 'basic', output: basicResult });
       console.log('');
-      
+
       // Generate graphs for all maritime profiles
       if (profiles && profiles.classes) {
         const classes = Object.keys(profiles.classes);
@@ -341,14 +341,14 @@ async function main() {
           console.log('');
         }
       }
-      
+
       console.timeEnd('⏱️  Total generation time');
       console.log('\n📋 Generated Graphs Summary:');
       for (const result of results) {
         console.log(`  ${result.profile.padEnd(12)} → ${result.output}`);
       }
       console.log('\n🎉 All graphs generated successfully!');
-      
+
     } else {
       // Generate single graph for specified profile
       if (options.profile !== 'basic' && profiles && profiles.classes) {
@@ -359,15 +359,15 @@ async function main() {
           process.exit(1);
         }
       }
-      
+
       const outputFile = await generateGraph(options, helpers);
-      
+
       console.timeEnd('⏱️  Total generation time');
       console.log(`\nProfile: ${options.profile}`);
       console.log(`Output:  ${outputFile}`);
       console.log('\n🎉 Graph generation completed successfully!');
     }
-    
+
   } catch (error) {
     console.error(`\n❌ Fatal error: ${error.message}`);
     if (options.debugMode) {
