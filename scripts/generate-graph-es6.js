@@ -231,7 +231,7 @@ function buildGraph(network, profile, helpers, debugMode = false) {
     weightFn = (a, b) => Math.trunc(helpers.haversine(a, b));
   } else {
     // Maritime profile with vessel restrictions
-    const profiles = helpers.defaultProfiles;
+    const profiles = helpers.profiles || helpers.defaultProfiles;
     weightFn = buildMaritimeWeights(profiles, profile, helpers, { restrictedMultiplier: 1.25 });
   }
 
