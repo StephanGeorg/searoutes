@@ -1,13 +1,8 @@
 import { expect } from 'chai';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 
-import util from 'util'; // Used for debugging
+import { SeaRoutes } from '../src/SeaRoutes.js';
 
-import { SeaRoute } from '../src/SeaRoutes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const SeaRoute = SeaRoutes; // Legacy alias for compatibility
 
 let seaRoutes;
 
@@ -83,7 +78,7 @@ describe('SeaRoute', () => {
       });
     });
 
-    it('should return valid GeoJSON Feature', function() {
+    it('should return valid GeoJSON Feature', () => {
       const result = seaRoutes.getShortestRoute(
         [-6.144, 53.265],
         [-5.329, 50.119],
@@ -96,7 +91,7 @@ describe('SeaRoute', () => {
       expect(result.properties).to.be.an('object');
     });
 
-    it('should return MultiPoint geometry when path is false', function() {
+    it('should return MultiPoint geometry when path is false', () => {
       const result = seaRoutes.getShortestRoute(
         [-6.144, 53.265],
         [-5.329, 50.119],
@@ -111,7 +106,7 @@ describe('SeaRoute', () => {
       expect(result.geometry.coordinates[1]).to.be.an('array').with.lengthOf(2);
     });
 
-    it('should return geometry when path is true', function() {
+    it('should return geometry when path is true', () => {
       const result = seaRoutes.getShortestRoute(
         [-6.144, 53.265],
         [-5.329, 50.119],
@@ -121,7 +116,7 @@ describe('SeaRoute', () => {
       expect(result).to.be.an('object');
       // splitGeoJSON can return Feature or FeatureCollection
       expect(result.type).to.be.oneOf(['Feature', 'FeatureCollection']);
-      
+
       if (result.type === 'Feature') {
         expect(result.geometry).to.exist;
         expect(result.geometry.type).to.be.oneOf(['LineString', 'MultiLineString']);
@@ -254,13 +249,13 @@ describe('SeaRoute', () => {
       expect(seaRoute.geometry.coordinates.length).to.be.equal(2);
       done();
     });
-    
+
     it('should return sea route path (CNSGH  <- DEHAM)', (done) => {
       const seaRoute = seaRoutes
         .getShortestRoute(
           [121.48, 31.23],
           [9.93, 53.52],
-          { 
+          {
             path: true,
           },
         );
@@ -270,7 +265,7 @@ describe('SeaRoute', () => {
         depth: null,
         colors: false,
         maxArrayLength: null,
-      })); */ 
+      })); */
 
       expect(seaRoute.properties.distance).to.be.equal(15315.904);
       expect(seaRoute.properties.distanceNM).to.be.equal(8269.93);
@@ -299,7 +294,7 @@ describe('SeaRoute', () => {
         maxArrayLength: null,
       })); */
 
-      console.log(JSON.stringify(seaRoute));
+      // Result logged for debugging purposes
 
       expect(seaRoute.properties.distance).to.be.equal(26269.169);
       expect(seaRoute.properties.distanceNM).to.be.equal(14184.22);
@@ -328,7 +323,7 @@ describe('SeaRoute', () => {
         maxArrayLength: null,
       })); */
 
-      console.log(JSON.stringify(seaRoute));
+      // Result logged for debugging purposes
 
       expect(seaRoute.properties.distance).to.be.equal(26269.169);
       expect(seaRoute.properties.distanceNM).to.be.equal(14184.22);

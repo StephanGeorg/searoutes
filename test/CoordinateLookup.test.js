@@ -324,7 +324,8 @@ describe('CoordinateLookup', () => {
       const originalLog = console.log;
       console.log = (...args) => logSpy.push(args);
 
-      const quietLookup = new CoordinateLookup(testNetwork, { enableLogging: false });
+      // Test quiet lookup creation without storing result
+      new CoordinateLookup(testNetwork, { enableLogging: false });
 
       console.log = originalLog;
 
@@ -340,7 +341,8 @@ describe('CoordinateLookup', () => {
       const originalLog = console.log;
       console.log = (...args) => logSpy.push(args);
 
-      const verboseLookup = new CoordinateLookup(testNetwork, { enableLogging: true });
+      // Test verbose lookup creation without storing result
+      new CoordinateLookup(testNetwork, { enableLogging: true });
 
       console.log = originalLog;
 
