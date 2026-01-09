@@ -341,66 +341,6 @@ describe('SeaRoutesCH', () => {
     });
   });
 
-  describe('Batch Route Finding', () => {
-    it('should process multiple routes in batch', function() {
-      this.timeout(30000);
-
-      if (!sharedRouter || !sharedRouter.isReady()) {
-        this.skip();
-      }
-
-      const routes = [
-        { startLng: -6.144, startLat: 53.265, endLng: -5.329, endLat: 50.119 },
-        { startLng: 13.5029, startLat: 43.6214, endLng: 20.2621, endLat: 39.4982 },
-        { startLng: 121.48, startLat: 31.23, endLng: 9.93, endLat: 53.52 },
-      ];
-
-      const results = sharedRouter.findRoutes(routes);
-
-      expect(results).to.be.an('array');
-      expect(results).to.have.lengthOf(3);
-
-      results.forEach((result, index) => {
-        expect(result).to.have.property('index', index);
-        expect(result).to.have.property('success');
-
-        if (result.success) {
-          expect(result).to.have.property('distance');
-          expect(result).to.have.property('startPoint');
-          expect(result).to.have.property('endPoint');
-        }
-      });
-    });
-
-    it('should handle batch processing with invalid input', () => {
-      expect(() => {
-        sharedRouter.findRoutes('not an array');
-      }).to.throw(/Routes must be an array/);
-    });
-
-    it('should handle mixed success/failure in batch processing', function() {
-      this.timeout(30000);
-
-      if (!sharedRouter || !sharedRouter.isReady()) {
-        this.skip();
-      }
-
-      const routes = [
-        { startLng: -6.144, startLat: 53.265, endLng: -5.329, endLat: 50.119 }, // Valid
-        { startLng: 'invalid', startLat: 53.265, endLng: -5.329, endLat: 50.119 }, // Invalid
-        { startLng: 13.5029, startLat: 43.6214, endLng: 20.2621, endLat: 39.4982 }, // Valid
-      ];
-
-      const results = sharedRouter.findRoutes(routes);
-
-      expect(results).to.be.an('array');
-      expect(results).to.have.lengthOf(3);
-      expect(results[0]).to.have.property('success');   // First route
-      expect(results[1]).to.have.property('success');   // Second route (may succeed despite invalid input)
-      expect(results[2]).to.have.property('success');   // Third route
-    });
-  });
-
   describe('Error Handling and Edge Cases', () => {
     it('should handle invalid coordinates gracefully', function() {
       this.timeout(10000);

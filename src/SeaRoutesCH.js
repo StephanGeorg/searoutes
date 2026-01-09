@@ -245,35 +245,6 @@ export class SeaRouteCH {
   }
 
   /**
-   * Batch route finding for multiple origin-destination pairs
-   *
-   * @param {Array} routes - Array of route objects with {startLng, startLat, endLng, endLat}
-   * @param {Object} options - Routing options
-   * @returns {Array} Array of route results
-   */
-  findRoutes(routes, options = {}) {
-    if (!Array.isArray(routes)) {
-      throw new Error('Routes must be an array');
-    }
-
-    return routes.map((route, index) => {
-      try {
-        const { startLng, startLat, endLng, endLat } = route;
-        return {
-          index,
-          ...this.findRoute(startLng, startLat, endLng, endLat, options),
-        };
-      } catch (error) {
-        return {
-          index,
-          success: false,
-          error: error.message,
-        };
-      }
-    });
-  }
-
-  /**
    * Dispose of loaded graph and free memory
    */
   dispose() {
