@@ -60,7 +60,7 @@ function loadDefaultNetwork(networkName = 'eurostat') {
  * @property {Map} pathfinders - Map of profile names to PathFinder instances
  * @property {Object} logger - Logger instance for performance monitoring
  */
-export class SeaRoute {
+export class SeaRoutes {
   /**
    * Creates a new SeaRoute instance
    * @param {Object} [options={}] - Configuration options
@@ -400,6 +400,6 @@ export class SeaRoute {
  * @type {SeaRoutesModule}
  */
 export default {
-  SeaRoute,
+  SeaRoutes,
   version: '1.0.0',
 };

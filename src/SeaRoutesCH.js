@@ -28,7 +28,7 @@ import { unwrapPath, normalizePair } from './utils/geo.js';
  * Provides efficient pathfinding using pre-built Contraction Hierarchy graphs.
  * Graphs must be generated using the generate-graph scripts before use.
  */
-export class SeaRouteCH {
+export default class SeaRoutesCH {
   /**
    * Create a new SeaRouteCH instance
    *
@@ -194,8 +194,7 @@ export class SeaRouteCH {
       // Prepare result object
       const result = {
         success: true,
-        distance: pathResult.distance || 0,
-        duration: pathResult.duration || 0,
+        distance: pathResult.total_cost || 0,
         startPoint: { lng: startLng, lat: startLat, networkPoint: startPt },
         endPoint: { lng: endLng, lat: endLat, networkPoint: endPt },
         rawPath: pathResult,

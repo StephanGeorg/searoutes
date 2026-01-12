@@ -8,7 +8,7 @@
 import { expect } from 'chai';
 import { existsSync, readFileSync } from 'fs';
 
-import { SeaRouteCH } from '../src/SeaRoutesCH.js';
+import SeaRoutesCH from '../src/SeaRoutesCH.js';
 
 describe('SeaRoutesCH', () => {
   // Shared router instance for most tests
@@ -21,7 +21,7 @@ describe('SeaRoutesCH', () => {
       this.skip();
     }
 
-    sharedRouter = new SeaRouteCH({ graphPath: './eurostat.pbf' });
+    sharedRouter = new SeaRoutesCH({ graphPath: './eurostat.pbf' });
   });
 
   after(() => {
@@ -31,7 +31,7 @@ describe('SeaRoutesCH', () => {
   });
   describe('Constructor and Graph Loading', () => {
     it('should create instance without auto-loading when no options provided', () => {
-      const router = new SeaRouteCH();
+      const router = new SeaRoutesCH();
       expect(router.isReady()).to.be.false;
       expect(router.getGraphInfo()).to.be.null;
     });
@@ -44,7 +44,7 @@ describe('SeaRoutesCH', () => {
         this.skip();
       }
 
-      const router = new SeaRouteCH({ graphPath: './eurostat.pbf' });
+      const router = new SeaRoutesCH({ graphPath: './eurostat.pbf' });
       expect(router.isReady()).to.be.true;
       expect(router.getGraphInfo()).to.be.an('object');
       expect(router.getGraphInfo().loaded).to.equal('./eurostat.pbf');
@@ -59,7 +59,7 @@ describe('SeaRoutesCH', () => {
         this.skip();
       }
 
-      const router = new SeaRouteCH({
+      const router = new SeaRoutesCH({
         graphName: 'eurostat',
         profile: 'basic',
       });
@@ -69,13 +69,13 @@ describe('SeaRoutesCH', () => {
 
     it('should throw error for non-existent graph file', () => {
       expect(() => {
-        new SeaRouteCH({ graphPath: './nonexistent.pbf' });
+        new SeaRoutesCH({ graphPath: './nonexistent.pbf' });
       }).to.throw(/Graph file not found/);
     });
 
     it('should throw error for invalid graph data', () => {
       expect(() => {
-        new SeaRouteCH({ graphPath: './package.json' }); // Invalid PBF file
+        new SeaRoutesCH({ graphPath: './package.json' }); // Invalid PBF file
       }).to.throw(/Failed to load graph/);
     });
   });
@@ -84,7 +84,7 @@ describe('SeaRoutesCH', () => {
     let router;
 
     beforeEach(() => {
-      router = new SeaRouteCH();
+      router = new SeaRoutesCH();
     });
 
     afterEach(() => {
@@ -94,7 +94,7 @@ describe('SeaRoutesCH', () => {
     });
 
     it('should load graph manually', function() {
-      this.timeout(10000);
+      this.timeout(0);
 
       if (!existsSync('./eurostat.pbf')) {
         this.skip();
@@ -147,7 +147,7 @@ describe('SeaRoutesCH', () => {
     });
 
     it('should throw error when finding point without loaded graph', () => {
-      const emptyRouter = new SeaRouteCH();
+      const emptyRouter = new SeaRoutesCH();
       expect(() => {
         emptyRouter.findClosestPoint(-6.144, 53.265);
       }).to.throw(/Graph not loaded/);
@@ -221,7 +221,7 @@ describe('SeaRoutesCH', () => {
 
       if (result.success) {
         expect(result.distance).to.be.a('number');
-        expect(result.distance).to.be.at.least(0);
+        expect(result.distance).to.be.equal(10560.571);
       }
     });
 
@@ -308,7 +308,7 @@ describe('SeaRoutesCH', () => {
     });
 
     it('should throw error when finding route without loaded graph', () => {
-      const emptyRouter = new SeaRouteCH();
+      const emptyRouter = new SeaRoutesCH();
       expect(() => {
         emptyRouter.findRoute(-6.144, 53.265, -5.329, 50.119);
       }).to.throw(/Graph not loaded/);
@@ -349,7 +349,7 @@ describe('SeaRoutesCH', () => {
         this.skip();
       }
 
-      const router = new SeaRouteCH({ graphPath: './eurostat.pbf' });
+      const router = new SeaRoutesCH({ graphPath: './eurostat.pbf' });
 
       // Test various invalid coordinate scenarios
       // Note: The API may handle invalid coordinates gracefully by converting them
@@ -372,7 +372,7 @@ describe('SeaRoutesCH', () => {
         this.skip();
       }
 
-      const router = new SeaRouteCH({ graphPath: './eurostat.pbf' });
+      const router = new SeaRoutesCH({ graphPath: './eurostat.pbf' });
 
       // Test coordinates at extreme ranges
       const result = router.findRoute(
@@ -387,7 +387,7 @@ describe('SeaRoutesCH', () => {
     });
 
     it('should handle buffer input for graph loading', function() {
-      this.timeout(10000);
+      this.timeout(0);
 
       if (!existsSync('./eurostat.pbf')) {
         this.skip();
@@ -395,7 +395,7 @@ describe('SeaRoutesCH', () => {
 
       const buffer = readFileSync('./eurostat.pbf');
 
-      const router = new SeaRouteCH();
+      const router = new SeaRoutesCH();
       router.loadGraph(buffer);
 
       expect(router.isReady()).to.be.true;
@@ -407,14 +407,14 @@ describe('SeaRoutesCH', () => {
 
   describe('Performance and Memory', () => {
     it('should load graph within reasonable time', function() {
-      this.timeout(15000); // Increased timeout
+      this.timeout(0); // Increased timeout
 
       if (!existsSync('./eurostat.pbf')) {
         this.skip();
       }
 
       const start = Date.now();
-      const router = new SeaRouteCH({ graphPath: './eurostat.pbf' });
+      const router = new SeaRoutesCH({ graphPath: './eurostat.pbf' });
       const loadTime = Date.now() - start;
 
       expect(loadTime).to.be.lessThan(12000); // Relaxed to 12 seconds

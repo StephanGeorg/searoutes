@@ -267,52 +267,6 @@ function listProfiles(profiles) {
 }
 
 /**
- * Build maritime pathfinder weight function for a specific vessel class
- *
- * This function creates a weight function that applies vessel-specific routing
- * restrictions and cost multipliers based on maritime passage rules.
- *
- * @function buildMaritimeWeights
- * @param {Object} profiles - Maritime profiles configuration
- * @param {string} vesselClass - Target vessel class (e.g., 'panamax', 'vlcc', 'ulcv')
- * @param {Object} helpers - Utility functions for profile processing
- * @param {Object} options - Additional configuration options
- * @param {number} options.restrictedMultiplier - Cost multiplier for restricted passages
- * @returns {Function} Weight function for graph construction
- * @throws {Error} If vessel class is not found in profiles
- */
-function buildMaritimeWeights(profiles, vesselClass, helpers, options = {}) {
-  const { restrictedMultiplier = DEFAULT_RESTRICTED_MULTIPLIER } = options;
-
-  // Validate profiles configuration
-  const classes = Object.keys(profiles.classes || {});
-  if (classes.length === 0) {
-    throw new Error('profiles.classes is empty. Add at least one vessel class.');
-  }
-
-  // Validate requested vessel class exists
-  if (!classes.includes(vesselClass)) {
-    throw new Error(
-      `Vessel class '${vesselClass}' not found in profiles. Available: ${classes.join(', ')}`,
-    );
-  }
-
-  // Compute effective passage status for all vessel classes
-  const effective = helpers.computeEffectiveStatusNoOverrides(profiles, classes);
-
-  // Collect edge rules (forbidden/restricted passages) for each class
-  const rules = helpers.collectClassEdgeRules(effective, classes);
-
-  // Create weight function with vessel-specific restrictions
-  return helpers.makeWeightFn(
-    vesselClass,
-    rules,
-    restrictedMultiplier,
-    helpers.haversine,
-  );
-}
-
-/**
  * Generate a complete graph for a specific profile
  *
  * This function orchestrates the entire graph generation process:
@@ -337,10 +291,10 @@ async function generateGraph(options, helpers) {
   const network = loadNetwork(inputFile);
 
   // Step 2: Preprocess network for graph construction
-  const processedNetwork = preprocessNetwork(network, helpers.triplicateGeoJSON);
+  const processedNetwork = preprocessNetwork(network, helpers.triplicateGeoJSON, profile, helpers);
 
-  // Step 3: Build graph with profile-specific routing
-  const graph = buildGraph(processedNetwork, profile, helpers, debugMode);
+  // Step 3: Build graph using pre-calculated costs
+  const graph = buildGraph(processedNetwork, profile, debugMode);
 
   // Step 4: Generate appropriate output file path
   const outputFile = generateOutputPath(inputFile, options.outputFile, profile);
@@ -396,7 +350,7 @@ function loadNetwork(inputFile) {
 /**
  * Preprocess GeoJSON network for graph construction
  */
-function preprocessNetwork(network, triplicateGeoJSON) {
+function preprocessNetwork(network, triplicateGeoJSON, profile, helpers) {
   console.log('🔄 Preprocessing network...');
 
   console.time('⏱️  Triplicating GeoJSON');
@@ -404,12 +358,35 @@ function preprocessNetwork(network, triplicateGeoJSON) {
   console.timeEnd('⏱️  Triplicating GeoJSON');
 
   console.log(`📈 Triplicated network has ${triplicated.features.length} features`);
-  console.log('💰 Adding cost properties...');
+  console.log(`💰 Adding cost properties for profile: ${profile}...`);
+
+  // Prepare maritime rules if not basic profile
+  let rules = null;
+  if (profile !== DEFAULT_PROFILE) {
+    const profiles = helpers.profiles || helpers.defaultProfiles;
+    const classes = Object.keys(profiles.classes || {});
+    if (classes.includes(profile)) {
+      const effective = helpers.computeEffectiveStatusNoOverrides(profiles, classes);
+      rules = helpers.collectClassEdgeRules(effective, classes)[profile];
+    }
+  }
 
   triplicated.features.forEach((feature, index) => {
-    const distKm = length(feature, { units: 'kilometers' });
-    feature.properties._cost = distKm;
-    feature.properties._id = index + 1;
+    const featureId = index + 1;
+    const baseCost = length(feature, { units: 'kilometers' });
+
+    // Apply maritime profile restrictions to cost
+    let finalCost = baseCost;
+    if (rules) {
+      if (rules.forbidden.has(featureId)) {
+        finalCost = Infinity;
+      } else if (rules.restricted.has(featureId)) {
+        finalCost = baseCost * DEFAULT_RESTRICTED_MULTIPLIER;
+      }
+    }
+
+    feature.properties._cost = finalCost;
+    feature.properties._id = featureId;
   });
 
   console.log('✅ Preprocessing completed');
@@ -417,25 +394,14 @@ function preprocessNetwork(network, triplicateGeoJSON) {
 }
 
 /**
- * Build Contraction Hierarchy graph with profile-specific weight function
+ * Build Contraction Hierarchy graph using pre-calculated costs
  */
-function buildGraph(network, profile, helpers, debugMode = false) {
+function buildGraph(network, profile, debugMode = false) {
   console.log(`🏗️  Building Contraction Hierarchy graph for profile: ${profile}`);
+  console.log('🗺️  Using pre-calculated _cost values from network features');
 
   console.time('⏱️  Graph construction');
-
-  let weightFunction;
-
-  if (profile === DEFAULT_PROFILE) {
-    console.log('🗺️  Using basic distance-based routing');
-    weightFunction = (coordinateA, coordinateB) => Math.trunc(helpers.haversine(coordinateA, coordinateB));
-  } else {
-    console.log(`🚢  Using maritime profile routing for: ${profile}`);
-    const profiles = helpers.profiles || helpers.defaultProfiles;
-    weightFunction = buildMaritimeWeights(profiles, profile, helpers, { restrictedMultiplier: DEFAULT_RESTRICTED_MULTIPLIER });
-  }
-
-  const graph = new Graph(network, { debugMode, weight: weightFunction });
+  const graph = new Graph(network, { debugMode });
   console.timeEnd('⏱️  Graph construction');
 
   console.time('⏱️  Contracting graph');
